@@ -239,6 +239,10 @@ public:
     bool estaRodando() const {
         return rodando;
     }
+    
+    SOCKET obterSocket() const {
+        return socket_servidor;
+    }
 };
 
 /* ============================================================

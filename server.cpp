@@ -260,14 +260,67 @@ RespostaHTTP manipularRota(const RequisicaoHTTP& req) {
  * ============================================================ */
 static std::unique_ptr<ServidorHTTP> g_servidor;
 static std::unique_ptr<std::thread> g_thread_servidor;
+static volatile bool servidor_parado = false;
+
+/* ============================================================
+ * Função para processar cliente em thread separada
+ * ============================================================ */
+static void processorClienteThread(SOCKET cliente_socket) {
+    try {
+        // Receber dados
+        char buffer[4096] = {0};
+        int bytes_recebidos = recv(cliente_socket, buffer, sizeof(buffer) - 1, 0);
+        
+        if (bytes_recebidos > 0) {
+            buffer[bytes_recebidos] = '\0';
+            std::string dados_recebidos(buffer);
+            
+            // Parsear requisição
+            RequisicaoHTTP req = RequisicaoHTTP::parsear(dados_recebidos);
+            
+            // Chamar manipulador
+            RespostaHTTP resp = manipularRota(req);
+            
+            // Enviar resposta
+            std::string resposta_str = resp.serializar();
+            send(cliente_socket, resposta_str.c_str(), (int)resposta_str.length(), 0);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[SERVIDOR] Erro ao processar cliente: " << e.what() << "\n";
+    }
+    
+    // Fechar conexão
+    CLOSE_SOCKET(cliente_socket);
+}
 
 /* ============================================================
  * Função para rodar o servidor em background
  * ============================================================ */
 static void rodarServidorBackground() {
-    if (g_servidor && g_servidor->estaRodando()) {
-        g_servidor->rodar_bloqueante();
+    std::cout << "[SERVIDOR] Thread de servidor iniciada\n";
+    
+    while (g_servidor && g_servidor->estaRodando() && !servidor_parado) {
+        struct sockaddr_in cliente_addr;
+        socklen_t cliente_addr_len = sizeof(cliente_addr);
+        
+        // Accept com timeout de 1 segundo
+        SOCKET cliente_socket = accept(g_servidor->obterSocket(), 
+                                       (struct sockaddr*)&cliente_addr, 
+                                       &cliente_addr_len);
+        
+        if (cliente_socket == INVALID_SOCKET) {
+            // Timeout ou erro - continue
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue;
+        }
+        
+        // Processar em thread separada
+        std::thread cliente_thread(processorClienteThread, cliente_socket);
+        cliente_thread.detach(); // Deixar rodar independentemente
     }
+    
+    std::cout << "[SERVIDOR] Thread de servidor encerrada\n";
+}
 }
 
 /* ============================================================
@@ -287,11 +340,30 @@ bool iniciarServidorWeb() {
             return false;
         }
         
+        servidor_parado = false;
+        
         // Rodar em thread separada (daemon)
         g_thread_servidor = std::make_unique<std::thread>(rodarServidorBackground);
+        g_thread_servidor->detach(); // Deixar rodar independentemente
         
-        std::cout << "[INFO] ✓ Servidor web iniciado com sucesso na porta 2021\n";
-        std::cout << "[INFO] Acesse: http://localhost:2021\n";
+        std::cout << "\n";
+        std::cout << "╔════════════════════════════════════════════════════════════╗\n";
+        std::cout << "║           SERVIDOR WEB INICIADO COM SUCESSO                ║\n";
+        std::cout << "╠════════════════════════════════════════════════════════════╣\n";
+        std::cout << "║ Porta: 2021                                                ║\n";
+        std::cout << "║ Ligação: Todas as interfaces (0.0.0.0:2021)               ║\n";
+        std::cout << "║                                                            ║\n";
+        std::cout << "║ Acesso:                                                    ║\n";
+        std::cout << "║  • Localhost:  http://localhost:2021                      ║\n";
+        std::cout << "║  • Local:      http://127.0.0.1:2021                      ║\n";
+        std::cout << "║  • Remoto:     http://<seu-ip>:2021                       ║\n";
+        std::cout << "║                                                            ║\n";
+        std::cout << "║ Para encontrar seu IP:                                     ║\n";
+        std::cout << "║  Linux/macOS:  ifconfig ou ip addr                        ║\n";
+        std::cout << "║  Windows:      ipconfig /all                              ║\n";
+        std::cout << "║  Teste:        curl http://localhost:2021                 ║\n";
+        std::cout << "╚════════════════════════════════════════════════════════════╝\n";
+        std::cout << "\n";
         
         return true;
     } catch (const std::exception& e) {
@@ -304,10 +376,10 @@ bool iniciarServidorWeb() {
  * Parar servidor (para limpeza no exit)
  * ============================================================ */
 void pararServidorWeb() {
+    servidor_parado = true;
     if (g_servidor) {
         g_servidor->parar();
     }
-    if (g_thread_servidor && g_thread_servidor->joinable()) {
-        g_thread_servidor->join();
-    }
+    // Aguardar um pouco para thread terminar
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 }
