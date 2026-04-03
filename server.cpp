@@ -194,15 +194,6 @@ bool iniciarServidorWeb() {
 }
 
 /* ============================================================
- * Parar servidor
- * ============================================================ */
-void pararServidorWeb() {
-    servidor_parado = true;
-    if (g_servidor) {
-        g_servidor->parar();
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-}
  * Parar servidor (para limpeza no exit)
  * ============================================================ */
 void pararServidorWeb() {
@@ -210,6 +201,5 @@ void pararServidorWeb() {
     if (g_servidor) {
         g_servidor->parar();
     }
-    // Aguardar um pouco para thread terminar
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 }
