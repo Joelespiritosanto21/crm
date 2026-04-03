@@ -5,6 +5,8 @@
 #include "produtos.h"
 #include "logs.h"
 #include "auth.h"
+#include "data_layer.h"
+#include "sync_manager.h"
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
@@ -13,7 +15,7 @@
  * Encontrar produto por EAN
  * ================================================================ */
 JsonValue produtoEncontrarPorEAN(const std::string& ean) {
-    JsonValue prods = jsonParseFile(FILE_PRODUTOS);
+    JsonValue prods = dl_get_produtos_local();
     if (!prods.isArray()) return JsonValue();
     for (auto& p : prods.arr)
         if (p["ean"].asString()==ean) return p;
@@ -21,7 +23,7 @@ JsonValue produtoEncontrarPorEAN(const std::string& ean) {
 }
 
 JsonValue produtoEncontrarPorId(const std::string& id) {
-    JsonValue prods = jsonParseFile(FILE_PRODUTOS);
+    JsonValue prods = dl_get_produtos_local();
     if (!prods.isArray()) return JsonValue();
     for (auto& p : prods.arr)
         if (p["id"].asString()==id) return p;
@@ -32,14 +34,14 @@ JsonValue produtoEncontrarPorId(const std::string& id) {
  * Reduzir stock — retorna false se stock insuficiente
  * ================================================================ */
 bool produtoReduzirStock(const std::string& produto_id, int quantidade) {
-    JsonValue prods = jsonParseFile(FILE_PRODUTOS);
+    JsonValue prods = dl_get_produtos_local();
     if (!prods.isArray()) return false;
     for (auto& p : prods.arr) {
         if (p["id"].asString()==produto_id) {
             int stock_atual = (int)p["stock"].asInt();
             if (stock_atual < quantidade) return false;
             p["stock"] = JsonValue((long long)(stock_atual - quantidade));
-            jsonSaveFile(FILE_PRODUTOS, prods);
+            dl_save_produtos_local(prods);
             return true;
         }
     }
@@ -47,14 +49,14 @@ bool produtoReduzirStock(const std::string& produto_id, int quantidade) {
 }
 
 void produtosAtualizarStock(const std::string& produto_id, int delta) {
-    JsonValue prods = jsonParseFile(FILE_PRODUTOS);
+    JsonValue prods = dl_get_produtos_local();
     if (!prods.isArray()) return;
     for (auto& p : prods.arr) {
         if (p["id"].asString()==produto_id) {
             int novo = (int)p["stock"].asInt() + delta;
             if (novo < 0) novo = 0;
             p["stock"] = JsonValue((long long)novo);
-            jsonSaveFile(FILE_PRODUTOS, prods);
+            dl_save_produtos_local(prods);
             return;
         }
     }
@@ -90,7 +92,7 @@ void produtosCriar() {
             ean = lerString("  EAN (código de barras): ");
             if (ean.empty()) break;
             // Verificar duplicado
-            JsonValue prods = jsonParseFile(FILE_PRODUTOS);
+            JsonValue prods = dl_get_produtos_local();
             bool dup = false;
             if (prods.isArray()) for (auto& p : prods.arr) if (p["ean"].asString()==ean) { dup=true; break; }
             if (dup) { std::cout << "  [!] EAN já existe.\n"; continue; }
@@ -124,10 +126,12 @@ void produtosCriar() {
     novo["ativo"]            = JsonValue(true);
     novo["criado_em"]        = JsonValue(dataAtual());
 
-    JsonValue prods = jsonParseFile(FILE_PRODUTOS);
+    JsonValue prods = dl_get_produtos_local();
     if (!prods.isArray()) prods = JsonValue(JsonArray{});
     prods.arr.push_back(JsonValue(novo));
-    jsonSaveFile(FILE_PRODUTOS, prods);
+    dl_save_produtos_local(prods);
+    // Enfileirar criacao de produto para sincronizacao central
+    sync_add_operation("create_produto", JsonValue(novo));
 
     logRegistar("criar_produto", "nome=" + nome + " ean=" + ean);
     std::cout << "\n  [OK] '" << nome << "' adicionado ao catálogo.\n";
@@ -137,7 +141,7 @@ void produtosCriar() {
  * Listar produtos
  * ================================================================ */
 void produtosListar() {
-    JsonValue prods = jsonParseFile(FILE_PRODUTOS);
+    JsonValue prods = dl_get_produtos_local();
     subtitulo("CATÁLOGO DE PRODUTOS");
     if (!prods.isArray() || prods.arr.empty()) { std::cout << "  Sem produtos.\n"; return; }
 
@@ -186,7 +190,7 @@ void produtosEditar() {
     subtitulo("EDITAR PRODUTO");
 
     std::string busca = lerString("  EAN ou nome: ");
-    JsonValue prods = jsonParseFile(FILE_PRODUTOS);
+    JsonValue prods = dl_get_produtos_local();
     if (!prods.isArray()) return;
 
     for (auto& p : prods.arr) {
@@ -217,7 +221,7 @@ void produtosEditar() {
                 p["ativo"] = JsonValue(false);
             }
 
-            jsonSaveFile(FILE_PRODUTOS, prods);
+            dl_save_produtos_local(prods);
             logRegistar("editar_produto", "id=" + p["id"].asString());
             std::cout << "  [OK] Produto atualizado.\n";
             return;
@@ -235,12 +239,12 @@ void produtosApagar() {
     if (!authReautenticar()) return;
 
     std::string ean = lerString("  EAN do produto: ");
-    JsonValue prods = jsonParseFile(FILE_PRODUTOS);
+    JsonValue prods = dl_get_produtos_local();
     if (!prods.isArray()) return;
     for (auto& p : prods.arr) {
         if (p["ean"].asString()==ean) {
             p["ativo"] = JsonValue(false);
-            jsonSaveFile(FILE_PRODUTOS, prods);
+            dl_save_produtos_local(prods);
             logRegistar("desativar_produto", "ean=" + ean);
             std::cout << "  [OK] Produto desativado.\n";
             return;
@@ -272,7 +276,7 @@ void produtosPesquisarEAN() {
  * Alertas de stock baixo
  * ================================================================ */
 void produtosAlertasStock() {
-    JsonValue prods = jsonParseFile(FILE_PRODUTOS);
+    JsonValue prods = dl_get_produtos_local();
     subtitulo("ALERTAS DE STOCK BAIXO");
     if (!prods.isArray()) { std::cout << "  Sem dados.\n"; return; }
 

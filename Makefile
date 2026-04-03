@@ -27,6 +27,10 @@ webserver: webserver.cpp
 	$(CXX) $(CXXFLAGS) -o webserver webserver.cpp -lpthread
 	@echo "  [OK] webserver compilado"
 
+server_api: server_api.cpp
+	$(CXX) $(CXXFLAGS) -o server_api server_api.cpp
+	@echo "  [OK] server_api compilado"
+
 run: gestao
 	./gestao
 

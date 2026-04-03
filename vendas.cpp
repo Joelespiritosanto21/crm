@@ -8,6 +8,8 @@
 #include "garantias.h"
 #include "documentos.h"
 #include "logs.h"
+#include "data_layer.h"
+#include "sync_manager.h"
 #include <iostream>
 #include <iomanip>
 #include <vector>
@@ -16,7 +18,7 @@
  * Próximo número de fatura
  * ================================================================ */
 int vendasProximoNumero() {
-    JsonValue vendas = jsonParseFile(FILE_VENDAS);
+    JsonValue vendas = dl_get_vendas_local();
     if (!vendas.isArray() || vendas.arr.empty()) return 1;
     int max = 0;
     for (auto& v : vendas.arr) {
@@ -68,7 +70,7 @@ void vendasCriar() {
             std::string nomeLow = nome;
             std::transform(nomeLow.begin(), nomeLow.end(), nomeLow.begin(), ::tolower);
 
-            JsonValue prods = jsonParseFile(FILE_PRODUTOS);
+            JsonValue prods = dl_get_produtos_local();
             std::vector<JsonValue*> encontrados;
             if (prods.isArray()) {
                 for (auto& p : prods.arr) {
@@ -169,10 +171,10 @@ void vendasCriar() {
     venda["data"]       = JsonValue(dataAtual());
     venda["vendedor"]   = JsonValue(g_sessao.username);
 
-    JsonValue vendas = jsonParseFile(FILE_VENDAS);
-    if (!vendas.isArray()) vendas = JsonValue(JsonArray{});
-    vendas.arr.push_back(JsonValue(venda));
-    jsonSaveFile(FILE_VENDAS, vendas);
+    // Persistir venda localmente
+    dl_add_venda_local(JsonValue(venda));
+    // Enfileirar para sincronização com servidor
+    sync_add_operation("create_venda", JsonValue(venda));
 
     /* 5. AUTOMAÇÕES PÓS-VENDA */
     std::vector<std::string> garantias_criadas;
@@ -219,7 +221,7 @@ void vendasCriar() {
  * Listar vendas
  * ================================================================ */
 void vendasListar() {
-    JsonValue vendas = jsonParseFile(FILE_VENDAS);
+    JsonValue vendas = dl_get_vendas_local();
     subtitulo("LISTA DE VENDAS");
 
     if (!vendas.isArray() || vendas.arr.empty()) {
@@ -257,7 +259,7 @@ void vendasDetalhe() {
     subtitulo("DETALHE DE VENDA");
     std::string num = lerString("  Número da fatura (ex: FAT-000001): ");
 
-    JsonValue vendas = jsonParseFile(FILE_VENDAS);
+    JsonValue vendas = dl_get_vendas_local();
     if (!vendas.isArray()) return;
 
     for (auto& v : vendas.arr) {

@@ -52,6 +52,10 @@ extern Sessao       g_sessao;
 extern std::string  g_breadcrumb;
 extern std::string  g_dica;
 extern std::string  g_loja_nome;
+/* Configuracao de sincronizacao */
+extern std::string  g_servidor_host;
+extern int          g_servidor_port;
+extern std::string  g_api_token;
 
 /* ── Inicializar consola Windows ───────────────────────────── */
 #ifdef _WIN32
