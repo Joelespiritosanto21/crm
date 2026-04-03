@@ -48,9 +48,9 @@ public:
     /* Limpar ecrã completamente */
     void limparEcraCompleto() {
 #ifdef _WIN32
-        system("cls");
+        (void)system("cls");
 #else
-        system("clear");
+        (void)system("clear");
 #endif
     }
     

@@ -75,7 +75,6 @@ static void dashboard() {
     int n_produtos = produtos.isArray() ? (int)produtos.arr.size() : 0;
     int n_vendas   = vendas.isArray()   ? (int)vendas.arr.size()   : 0;
     int n_reps     = reps.isArray()     ? (int)reps.arr.size()     : 0;
-    int n_orcs     = orcs.isArray()     ? (int)orcs.arr.size()     : 0;
 
     // Reparações em curso
     int reps_curso = 0;

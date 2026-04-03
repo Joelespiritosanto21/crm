@@ -14,7 +14,6 @@
     #include <termios.h>
     #include <unistd.h>
     #define STDIN_FILENO 0
-    #define ECHO 8
 #endif
 
 /* Leitura de password sem eco (compatível Windows/Linux) */
@@ -42,7 +41,7 @@ static std::string lerPassword(const std::string& prompt) {
     struct termios oldt, newt;
     if (tcgetattr(STDIN_FILENO, &oldt) == 0) {
         newt = oldt;
-        newt.c_lflag &= ~(ECHO);
+        newt.c_lflag &= ~(ICANON | ECHO);
         tcsetattr(STDIN_FILENO, TCSANOW, &newt);
         std::getline(std::cin, pw);
         tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
