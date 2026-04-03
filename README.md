@@ -5,6 +5,31 @@ Sem dependências externas — usa apenas a biblioteca padrão C++.
 
 ---
 
+## Novidades na Versão 2.0
+
+### ✨ Interface de Utilizador Aprimorada
+
+- **Limpeza automática de ecrã** — antes de cada operação
+- **Tamanho fixo e profissional** — 100×30 (adaptável)
+- **Esquema preto/branco puro** — sem cores, apenas ASCII art
+- **Formatação elegante** com bordas e separadores
+
+### 🔧 Compatibilidade Total
+
+- **Windows 10/11** com MinGW
+- **Linux** (Ubuntu, Debian, CentOS, etc.)
+- **macOS** (Intel e Apple Silicon)
+- **WSL2** (Windows Subsystem for Linux)
+
+### 🌐 Servidor Web (Próxima Versão)
+
+- Interface HTTP na porta 2021
+- Terminal web interativo
+- HTML minimalista preto/branco
+- Sem dependências JavaScript pesadas
+
+---
+
 ## Funcionalidades
 
 - **Autenticação** com username (3 letras) e password com hash SHA-256
@@ -39,7 +64,10 @@ Sem dependências externas — usa apenas a biblioteca padrão C++.
 ├── json_utils.h      — parser/writer JSON (sem dependências externas)
 ├── sha256.h          — implementação SHA-256 pura em C++
 ├── common.h          — tipos partilhados, UI helpers, sessão global
-├── Makefile
+├── ui.h/cpp          — NEW: Sistema de UI aprimorado
+├── server.h/cpp      — NEW: Servidor HTTP (porto 2021)
+├── Makefile          — build automation
+├── MELHORIAS.md      — Documentação completa das mudanças
 ├── data/             — ficheiros JSON (base de dados)
 │   ├── utilizadores.json
 │   ├── clientes.json
@@ -60,21 +88,42 @@ Sem dependências externas — usa apenas a biblioteca padrão C++.
 ### Pré-requisitos
 
 - GCC / G++ com suporte a C++17 (`g++ --version` deve ser 7+)
-- Sistema Linux/macOS (ou WSL no Windows)
+- Sistema Linux/macOS (ou WSL no Windows) **OU** MinGW no Windows
 
-### Com Makefile
-
-```bash
-make
-```
-
-### Manualmente
+### Windows (MinGW/MSYS2)
 
 ```bash
-g++ -std=c++17 -O2 -o gestao \
+# Compilação simples
+g++ -std=c++17 -O2 -Wall -Wextra -o gestao.exe \
   main.cpp auth.cpp clientes.cpp produtos.cpp vendas.cpp \
   orcamentos.cpp reparacoes.cpp garantias.cpp lojas.cpp \
-  logs.cpp documentos.cpp
+  logs.cpp documentos.cpp ui.cpp server.cpp -lws2_32
+```
+
+### Linux / macOS
+
+```bash
+# Com Makefile (recomendado)
+make
+make run
+
+# Ou manualmente
+g++ -std=c++17 -O2 -Wall -Wextra -o gestao \
+  main.cpp auth.cpp clientes.cpp produtos.cpp vendas.cpp \
+  orcamentos.cpp reparacoes.cpp garantias.cpp lojas.cpp \
+  logs.cpp documentos.cpp ui.cpp server.cpp -pthread
+```
+
+### WSL (Windows Subsystem for Linux)
+
+```bash
+# Instalar g++
+sudo apt-get update
+sudo apt-get install g++ make
+
+# Compilar
+make
+./gestao
 ```
 
 ---
@@ -98,12 +147,12 @@ Password : admin123
 
 ## Credenciais e Roles
 
-| Role      | Permissões                                              |
-|-----------|--------------------------------------------------------|
-| admin     | Controlo total, criar utilizadores, gerir lojas, apagar |
-| gerente   | Tudo exceto gestão de utilizadores e lojas              |
-| vendedor  | Clientes, produtos (leitura), vendas, orçamentos        |
-| tecnico   | Reparações, garantias, clientes (leitura)               |
+| Role     | Permissões                                              |
+| -------- | ------------------------------------------------------- |
+| admin    | Controlo total, criar utilizadores, gerir lojas, apagar |
+| gerente  | Tudo exceto gestão de utilizadores e lojas              |
+| vendedor | Clientes, produtos (leitura), vendas, orçamentos        |
+| tecnico  | Reparações, garantias, clientes (leitura)               |
 
 **Regra de username:** exatamente 3 letras (ex: `adm`, `joa`, `mar`)
 
@@ -127,6 +176,7 @@ recebido → diagnostico → reparacao → concluido → entregue
 ```
 
 Ao marcar como **concluido**:
+
 - Garantia de **30 dias** criada automaticamente
 - Relatório de conclusão gerado em `docs/REP-XXXXXX_conclusao.html`
 
@@ -136,13 +186,13 @@ Ao marcar como **concluido**:
 
 Todos os documentos são gerados em HTML em `/docs/`:
 
-| Tipo       | Ficheiro                          |
-|------------|-----------------------------------|
-| Fatura     | `docs/FAT-000001.html`            |
-| Orçamento  | `docs/ORC-000001.html`            |
-| Entrada Rep| `docs/REP-000001_entrada.html`    |
-| Conclusão  | `docs/REP-000001_conclusao.html`  |
-| Garantia   | `docs/GAR_<id>.html`              |
+| Tipo        | Ficheiro                         |
+| ----------- | -------------------------------- |
+| Fatura      | `docs/FAT-000001.html`           |
+| Orçamento   | `docs/ORC-000001.html`           |
+| Entrada Rep | `docs/REP-000001_entrada.html`   |
+| Conclusão   | `docs/REP-000001_conclusao.html` |
+| Garantia    | `docs/GAR_<id>.html`             |
 
 Para imprimir: abrir no browser e usar Ctrl+P, ou usar `lpr`.
 
@@ -151,6 +201,7 @@ Para imprimir: abrir no browser e usar Ctrl+P, ou usar `lpr`.
 ## Estrutura dos Ficheiros JSON
 
 ### utilizadores.json
+
 ```json
 [
   {
@@ -167,6 +218,7 @@ Para imprimir: abrir no browser e usar Ctrl+P, ou usar `lpr`.
 ```
 
 ### clientes.json
+
 ```json
 [
   {
@@ -182,6 +234,7 @@ Para imprimir: abrir no browser e usar Ctrl+P, ou usar `lpr`.
 ```
 
 ### produtos.json
+
 ```json
 [
   {
@@ -202,6 +255,7 @@ Para imprimir: abrir no browser e usar Ctrl+P, ou usar `lpr`.
 ```
 
 ### vendas.json
+
 ```json
 [
   {
@@ -229,6 +283,7 @@ Para imprimir: abrir no browser e usar Ctrl+P, ou usar `lpr`.
 ```
 
 ### reparacoes.json
+
 ```json
 [
   {
@@ -243,7 +298,7 @@ Para imprimir: abrir no browser e usar Ctrl+P, ou usar `lpr`.
     "senha": "1234",
     "estado": "reparacao",
     "tecnico": "tec",
-    "orcamento": 120.00,
+    "orcamento": 120.0,
     "valor_final": 0,
     "data_entrada": "2026-04-01 09:00:00",
     "data_conclusao": "",
@@ -255,6 +310,7 @@ Para imprimir: abrir no browser e usar Ctrl+P, ou usar `lpr`.
 ```
 
 ### garantias.json
+
 ```json
 [
   {
@@ -298,6 +354,7 @@ Para imprimir: abrir no browser e usar Ctrl+P, ou usar `lpr`.
 ## Resolução de Problemas
 
 **Erro de compilação "g++ não encontrado":**
+
 ```bash
 sudo apt-get install g++   # Ubuntu/Debian
 sudo yum install gcc-c++   # CentOS/RHEL

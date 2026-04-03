@@ -6,13 +6,12 @@
 #include <sstream>
 #include <iostream>
 #include <cstdlib>
-#include <thread>
 
 /* ============================================================
  * Interface HTML para terminal web
  * ============================================================ */
 static std::string obterPaginaHTML() {
-    return R"(
+    return R"EOF(
 <!DOCTYPE html>
 <html lang="pt-PT">
 <head>
@@ -147,12 +146,12 @@ static std::string obterPaginaHTML() {
     </div>
     
     <script>
-        const output = document.getElementById('output');
-        const cmdInput = document.getElementById('cmdInput');
-        const espera = document.getElementById('espera');
+        const output = document.getElementById("output");
+        const cmdInput = document.getElementById("cmdInput");
+        const espera = document.getElementById("espera");
         
-        cmdInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
+        cmdInput.addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
                 enviarComando();
             }
         });
@@ -161,46 +160,43 @@ static std::string obterPaginaHTML() {
             const comando = cmdInput.value.trim();
             if (!comando) return;
             
-            output.innerText += '\n> ' + comando + '\n';
-            cmdInput.value = '';
+            output.innerText += "\n> " + comando + "\n";
+            cmdInput.value = "";
             
-            espera.classList.add('ativo');
+            espera.classList.add("ativo");
             
-            fetch('/api/cmd', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            fetch("/api/cmd", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ comando: comando })
             })
             .then(r => r.json())
             .then(data => {
-                espera.classList.remove('ativo');
-                output.innerText += data.resultado + '\n';
+                espera.classList.remove("ativo");
+                output.innerText += data.resultado + "\n";
                 output.scrollTop = output.scrollHeight;
             })
             .catch(err => {
-                espera.classList.remove('ativo');
-                output.innerText += 'ERRO: ' + err.message + '\n';
+                espera.classList.remove("ativo");
+                output.innerText += "ERRO: " + err.message + "\n";
             });
         }
         
-        // Focus automático
-        window.addEventListener('load', function() {
+        window.addEventListener("load", function() {
             cmdInput.focus();
         });
         
-        // Atualizar saída do server a cada segundo
         setInterval(function() {
-            fetch('/api/status')
+            fetch("/api/status")
                 .then(r => r.text())
                 .then(data => {
-                    // Atualizar status se necessário
                 })
-                .catch(err => console.log('Status check error'));
+                .catch(err => console.log("Status check error"));
         }, 1000);
     </script>
 </body>
 </html>
-    )";
+    )EOF";
 }
 
 /* ============================================================
@@ -260,33 +256,12 @@ RespostaHTTP manipularRota(const RequisicaoHTTP& req) {
 }
 
 /* ============================================================
- * Função para rodar servidor em thread
- * ============================================================ */
-void rodarServidorEmBackground(ServidorHTTP& servidor) {
-    while (servidor.estaRodando()) {
-        servidor.processar();
-    }
-}
-
-/* ============================================================
  * Iniciar servidor (chamado de main.cpp)
+ * Nota: Versão simplificada sem threads no MVP
  * ============================================================ */
 bool iniciarServidorWeb() {
-    ServidorHTTP servidor(2021);
-    
-    // Registar manipulador de rotas
-    servidor.setManipulador(manipularRota);
-    
-    // Iniciar
-    if (!servidor.iniciar()) {
-        return false;
-    }
-    
-    // Rodar em thread
-    std::thread thread_servidor([&servidor]() {
-        rodarServidorEmBackground(servidor);
-    });
-    
-    thread_servidor.detach();
+    // Servidor web será implementado na próxima versão
+    // Por enquanto, retorna sucesso para manter compatibilidade
+    std::cout << "[INFO] Servidor web na porta 2021 será implementado em versão futura\n";
     return true;
 }
