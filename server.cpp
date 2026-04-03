@@ -321,7 +321,6 @@ static void rodarServidorBackground() {
     
     std::cout << "[SERVIDOR] Thread de servidor encerrada\n";
 }
-}
 
 /* ============================================================
  * Iniciar servidor (chamado de main.cpp)
