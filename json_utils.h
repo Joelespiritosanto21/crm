@@ -228,10 +228,8 @@ inline std::string jsonSerialize(const JsonValue& v, int indent=0) {
             if (v.obj.empty()) return "{}";
             std::string r="{\n";
             size_t cnt=0;
-            for (auto& pair : v.obj) {
-                const std::string& k = pair.first;
-                const JsonValue& val = pair.second;
-                r += pad2 + jsonEscapeString(k) + ": " + jsonSerialize(val, indent+1);
+            for (auto it=v.obj.begin(); it!=v.obj.end(); ++it) {
+                r += pad2 + jsonEscapeString(it->first) + ": " + jsonSerialize(it->second, indent+1);
                 if (++cnt < v.obj.size()) r+=",";
                 r+="\n";
             }

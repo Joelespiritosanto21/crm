@@ -1,5 +1,5 @@
 /*
- * auth.cpp - Implementação de autenticação e gestão de utilizadores
+ * auth.cpp - Autenticacao e gestao de utilizadores
  */
 
 #include "auth.h"
@@ -8,49 +8,26 @@
 #include <iostream>
 #include <iomanip>
 
+/* Leitura de password cross-platform (sem eco) */
+static std::string lerPassword(const std::string& prompt) {
+    std::cout << "  " << prompt;
+    std::cout.flush();
+    std::string pw;
 #ifdef _WIN32
     #include <conio.h>
-#else
-    #include <termios.h>
-    #include <unistd.h>
-    #define STDIN_FILENO 0
-#endif
-
-/* Leitura de password sem eco (compatível Windows/Linux) */
-static std::string lerPassword(const std::string& prompt) {
-    std::cout << prompt;
-    std::string pw;
-    
-#ifdef _WIN32
-    // Windows: usar _getch
-    char ch;
-    while ((ch = _getch()) != '\r') {
-        if (ch == '\b') {
-            if (!pw.empty()) {
-                pw.pop_back();
-                std::cout << "\b \b";
-            }
-        } else {
-            pw += ch;
-            std::cout << '*';
-        }
+    char c;
+    while ((c = _getch()) != '\r' && c != '\n') {
+        if (c == '\b') { if (!pw.empty()) { pw.pop_back(); std::cout << "\b \b"; } }
+        else           { pw += c; std::cout << '*'; }
     }
     std::cout << "\n";
 #else
-    // Linux/Unix: usar termios
-    struct termios oldt, newt;
-    if (tcgetattr(STDIN_FILENO, &oldt) == 0) {
-        newt = oldt;
-        newt.c_lflag &= ~(ICANON | ECHO);
-        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-        std::getline(std::cin, pw);
-        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    } else {
-        std::getline(std::cin, pw);
-    }
+    /* Linux/macOS: desativar eco via escape ANSI (sem termios) */
+    std::cout << "\033[8m";   /* esconder texto */
+    std::getline(std::cin, pw);
+    std::cout << "\033[28m";  /* mostrar texto */
     std::cout << "\n";
 #endif
-    
     return pw;
 }
 

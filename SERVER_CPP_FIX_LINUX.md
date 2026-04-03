@@ -1,6 +1,17 @@
+# INSTRUÇÕES PARA CORRIGIR server.cpp NO SERVIDOR LINUX
+
+## Problema
+
+O arquivo `server.cpp` tem erros de compilação. As linhas estão duplicadas ou com sintaxe incorreta.
+
+## Solução - Copie este arquivo INTEIRO para substituir /root/crm_test/crm/server.cpp
+
+Abra um terminal SSH no servidor e execute:
+
+```bash
+cat > /root/crm_test/crm/server.cpp << 'ENDFILE'
 /*
  * server.cpp - Servidor HTTP simples na porta 2021
- * Completamente funcional com suporte Windows/Linux
  */
 
 #include "server.h"
@@ -62,14 +73,14 @@ static std::string obterPaginaHTML() {
 <body>
     <div class="container">
         <h1>Sistema de Gestão - Interface Web</h1>
-        
+
         <div class="status">
             <div class="info"><strong>Status:</strong> ✓ SERVIDOR ONLINE</div>
             <div class="info"><strong>Porta:</strong> 2021</div>
             <div class="info"><strong>Interface:</strong> 0.0.0.0 (Todas as interfaces)</div>
             <div class="info"><strong>Hora:</strong> <span id="hora"></span></div>
         </div>
-        
+
         <div style="margin-top: 20px; padding: 15px; border: 1px solid #666;">
             <h2 style="margin-bottom: 10px;">Endpoints Disponíveis</h2>
             <div class="info">
@@ -78,7 +89,7 @@ static std::string obterPaginaHTML() {
                 POST /api/cmd &rarr; Executar comando
             </div>
         </div>
-        
+
         <div style="margin-top: 20px; padding: 15px; border: 1px solid #666;">
             <h2 style="margin-bottom: 10px;">Testes Rápidos</h2>
             <div class="info">
@@ -88,7 +99,7 @@ curl -X POST http://localhost:2021/api/cmd -H "Content-Type: application/json" -
             </div>
         </div>
     </div>
-    
+
     <script>
         function atualizarHora() {
             document.getElementById('hora').innerText = new Date().toLocaleString('pt-PT');
@@ -108,24 +119,24 @@ static RespostaHTTP manipularRota(const RequisicaoHTTP& req) {
     if (req.metodo == "GET" && req.caminho == "/") {
         return RespostaHTTP(200, "text/html", obterPaginaHTML());
     }
-    
+
     // GET /index.html
     if (req.metodo == "GET" && req.caminho == "/index.html") {
         return RespostaHTTP(200, "text/html", obterPaginaHTML());
     }
-    
+
     // GET /api/status
     if (req.metodo == "GET" && req.caminho == "/api/status") {
-        return RespostaHTTP(200, "application/json", 
+        return RespostaHTTP(200, "application/json",
             "{\"status\":\"online\",\"porta\":2021,\"interface\":\"0.0.0.0\"}");
     }
-    
+
     // POST /api/cmd
     if (req.metodo == "POST" && req.caminho == "/api/cmd") {
-        return RespostaHTTP(200, "application/json", 
+        return RespostaHTTP(200, "application/json",
             "{\"resultado\":\"Comando recebido\"}");
     }
-    
+
     // 404
     return RespostaHTTP(404, "text/plain", "404 - Não encontrado");
 }
@@ -142,12 +153,12 @@ static volatile bool servidor_parado = false;
  * ============================================================ */
 static void rodarServidorBackground() {
     std::cout << "[SERVIDOR] Thread de servidor iniciada\n";
-    
+
     while (g_servidor && g_servidor->estaRodando() && !servidor_parado) {
         g_servidor->processar();
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    
+
     std::cout << "[SERVIDOR] Thread de servidor encerrada\n";
 }
 
@@ -156,24 +167,18 @@ static void rodarServidorBackground() {
  * ============================================================ */
 bool iniciarServidorWeb() {
     try {
-        // Criar instância do servidor na porta 2021
         g_servidor = std::make_unique<ServidorHTTP>(2021);
-        
-        // Registar manipulador de rotas
         g_servidor->setManipulador(manipularRota);
-        
-        // Iniciar
+
         if (!g_servidor->iniciar()) {
             std::cerr << "[ERRO] Falha ao iniciar servidor HTTP\n";
             return false;
         }
-        
+
         servidor_parado = false;
-        
-        // Rodar em thread separada
         g_thread_servidor = std::make_unique<std::thread>(rodarServidorBackground);
         g_thread_servidor->detach();
-        
+
         std::cout << "\n";
         std::cout << "╔════════════════════════════════════════════════════════════╗\n";
         std::cout << "║           SERVIDOR WEB INICIADO COM SUCESSO                ║\n";
@@ -187,7 +192,7 @@ bool iniciarServidorWeb() {
         std::cout << "║                                                            ║\n";
         std::cout << "╚════════════════════════════════════════════════════════════╝\n";
         std::cout << "\n";
-        
+
         return true;
     } catch (const std::exception& e) {
         std::cerr << "[ERRO] Exceção ao iniciar servidor: " << e.what() << "\n";
@@ -205,3 +210,21 @@ void pararServidorWeb() {
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 }
+ENDFILE
+```
+
+## Depois de copiar:
+
+```bash
+cd /root/crm_test/crm
+make clean
+make
+```
+
+## Se funcionar:
+
+```bash
+./gestao
+```
+
+Deve ver a mensagem de servidor iniciado na porta 2021.

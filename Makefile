@@ -1,78 +1,44 @@
-# Makefile — Sistema de Gestão Eletrónica
-# Uso: make        → compila
-#      make clean  → limpa binários
-#      make run    → compila e executa
+# Makefile — TechFix Sistema de Gestao
 #
-# Compatível com Windows (MinGW/MSVC) e Linux/macOS
+#  make           → compila gestao (terminal) e webserver
+#  make gestao    → apenas terminal
+#  make web       → apenas servidor web
+#  make run       → terminal direto
+#  make runweb    → servidor web (abrir http://localhost:2021)
+#  make clean     → limpar binarios
 
-# Detectar SO
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Linux)
-    CXX      = g++
-    CXXFLAGS = -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -pthread
-    LDFLAGS  = -lstdc++ -lm
-    TARGET   = gestao
-    CLEAN_CMD = rm -f
-    EXE_EXT  = 
-endif
-ifeq ($(UNAME_S),Darwin)
-    CXX      = clang++
-    CXXFLAGS = -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -pthread
-    LDFLAGS  = -lstdc++ -lm
-    TARGET   = gestao
-    CLEAN_CMD = rm -f
-    EXE_EXT  = 
-endif
-ifeq ($(OS),Windows_NT)
-    CXX      = g++
-    CXXFLAGS = -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -pthread -D_WIN32_WINNT=0x0601
-    LDFLAGS  = -lws2_32
-    TARGET   = gestao.exe
-    CLEAN_CMD = del /Q
-    EXE_EXT  = .exe
-endif
+CXX      = g++
+CXXFLAGS = -std=c++11 -O2 -Wall -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function
 
-# Valores padrão para SO desconhecido
-CXX      ?= g++
-CXXFLAGS ?= -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -pthread
-LDFLAGS  ?= -lstdc++ -lm
-TARGET   ?= gestao
-CLEAN_CMD ?= rm -f
+SRCS_MAIN = main.cpp auth.cpp clientes.cpp produtos.cpp vendas.cpp \
+            orcamentos.cpp reparacoes.cpp garantias.cpp lojas.cpp \
+            logs.cpp documentos.cpp
 
-SRCS = main.cpp auth.cpp clientes.cpp produtos.cpp vendas.cpp \
-       orcamentos.cpp reparacoes.cpp garantias.cpp lojas.cpp \
-       logs.cpp documentos.cpp ui.cpp server.cpp
-
-OBJS = $(SRCS:.cpp=.o)
-
-all: dirs $(TARGET)
+all: dirs gestao webserver
 
 dirs:
 	@mkdir -p data docs
 
-$(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
-	@echo ""
-	@echo "  [OK] Compilação concluída: ./$(TARGET)"
-	@echo ""
-	@echo "  Interface CLI: execute ./$(TARGET)"
-	@echo "  Interface Web: http://localhost:2021 (após iniciar)"
-	@echo ""
+gestao: $(SRCS_MAIN)
+	$(CXX) $(CXXFLAGS) -o gestao $(SRCS_MAIN)
+	@echo "  [OK] gestao compilado"
 
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+webserver: webserver.cpp
+	$(CXX) $(CXXFLAGS) -o webserver webserver.cpp -lpthread
+	@echo "  [OK] webserver compilado"
 
-run: all
-	./$(TARGET)
+run: gestao
+	./gestao
+
+runweb: gestao webserver
+	@echo ""
+	@echo "  Abrindo servidor web em http://localhost:2021 ..."
+	@echo "  Ctrl+C para parar."
+	@echo ""
+	./webserver
 
 clean:
-	$(CLEAN_CMD) $(OBJS) $(TARGET)
-	@echo "  Limpeza concluída."
+	rm -f gestao webserver *.o
+	@echo "  Limpeza concluida."
 
-clean-data:
-	@echo "  ATENÇÃO: Isto apaga todos os dados!"
-	rm -rf data/ docs/
-	mkdir -p data docs
-
-.PHONY: all dirs run clean clean-data
-
+.PHONY: all dirs run runweb clean

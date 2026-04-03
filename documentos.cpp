@@ -20,8 +20,14 @@ void docInicializar() {
 }
 
 /* ================================================================
- * Cabeçalho HTML comum
+ * Linha separadora HTML/TXT
  * ================================================================ */
+static std::string linhaHTML(int n=60) {
+    return "<hr style='border:1px solid #ccc;margin:8px 0'>";
+}
+static std::string linhaTXT(char c='-', int n=60) {
+    return std::string(n, c) + "\n";
+}
 
 /* ================================================================
  * Cabeçalho HTML comum
@@ -193,7 +199,7 @@ void docApresentarOpcoes(const std::string& filepath, const std::string& tipo) {
 #else
         cmd = "start \"\" \"" + filepath + "\"";
 #endif
-        (void)std::system(cmd.c_str());
+        std::system(cmd.c_str());
         std::cout << "  [OK] Documento enviado para visualização/impressão.\n";
     }
     if (op==1 || op==3) {
