@@ -1,20 +1,11 @@
 /*
- * main.cpp - Ponto de entrada + menu principal TUI de ecra fixo
- *
- * Compilar Linux/macOS:
- *   g++ -std=c++11 -O2 -o gestao main.cpp auth.cpp clientes.cpp produtos.cpp \
- *       vendas.cpp orcamentos.cpp reparacoes.cpp garantias.cpp lojas.cpp \
- *       logs.cpp documentos.cpp
- *
- * Compilar Windows (MinGW):
- *   g++ -std=c++11 -O2 -o gestao.exe main.cpp auth.cpp clientes.cpp produtos.cpp \
- *       vendas.cpp orcamentos.cpp reparacoes.cpp garantias.cpp lojas.cpp \
- *       logs.cpp documentos.cpp
+ * main.cpp - Interface TUI estilo SSN/Radio Popular
  */
 
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>
+#include <cctype>
 
 #ifdef _WIN32
   #include <direct.h>
@@ -37,20 +28,20 @@
 #include "logs.h"
 #include "documentos.h"
 
-/* Globais */
+/* ── Globais ─────────────────────────────────────────────── */
 Sessao      g_sessao;
-std::string g_breadcrumb = "Menu Principal";
+std::string g_breadcrumb = "MENU PRINCIPAL";
 std::string g_dica       = "";
+std::string g_loja_nome  = "TECHFIX";
 
-static void inicializarPastas() {
-    MKDIR(DATA_DIR); MKDIR(DOCS_DIR);
-}
+static void inicializarPastas() { MKDIR(DATA_DIR); MKDIR(DOCS_DIR); }
 
 /* ================================================================
- * Dashboard
+ * DASHBOARD estilo SSN
  * ================================================================ */
 static void dashboard() {
-    iniciarEcra("DASHBOARD","Menu Principal > Dashboard","0=Voltar  Enter=OK");
+    g_dica = "D-Dashboard  9-Sair";
+    iniciarEcra("", "DASHBOARD", "");
 
     JsonValue clientes=jsonParseFile(FILE_CLIENTES);
     JsonValue produtos=jsonParseFile(FILE_PRODUTOS);
@@ -58,16 +49,16 @@ static void dashboard() {
     JsonValue reps    =jsonParseFile(FILE_REPARACOES);
     JsonValue orcs    =jsonParseFile(FILE_ORCAMENTOS);
 
-    int n_cli =(clientes.isArray())?(int)clientes.arr.size():0;
-    int n_prd =(produtos.isArray())?(int)produtos.arr.size():0;
-    int n_vnd =(vendas.isArray())  ?(int)vendas.arr.size()  :0;
-    int n_rep =(reps.isArray())    ?(int)reps.arr.size()    :0;
+    int n_cli=(clientes.isArray())?(int)clientes.arr.size():0;
+    int n_prd=(produtos.isArray())?(int)produtos.arr.size():0;
+    int n_vnd=(vendas.isArray())  ?(int)vendas.arr.size()  :0;
+    int n_rep=(reps.isArray())    ?(int)reps.arr.size()    :0;
 
     int reps_curso=0;
     if(reps.isArray())
         for(size_t i=0;i<reps.arr.size();i++){
             std::string e=reps.arr[i]["estado"].asString();
-            if(e!="entregue"&&e!="concluido")++reps_curso;
+            if(e!="entregue"&&e!="concluido") ++reps_curso;
         }
     int orcs_pend=0;
     if(orcs.isArray())
@@ -89,160 +80,203 @@ static void dashboard() {
             if(p["stock"].asInt()<=p["stock_minimo"].asInt()) ++stock_baixo;
         }
 
-    /* Caixas de metricas 2x3 */
-    auto metricaLinha=[](const std::string& lbl, const std::string& val, const std::string& lbl2, const std::string& val2){
-        /* cada caixa tem 34 colunas de largura interior */
-        std::string c1=" \xe2\x94\x8c"+std::string(32,'\xe2')+std::string(1,'\x80')+std::string(1,'\x90')+" ";
-        /* usar ASCII simples para compatibilidade */
-        std::string row1=" +"+fw("",32,'-')+"+  +"+fw("",32,'-')+"+ ";
-        std::string row2=" | "+fw(lbl,30)+" |  | "+fw(lbl2,30)+" | ";
-        std::ostringstream v1,v2;
-        v1<<std::setw(28)<<val; v2<<std::setw(28)<<val2;
-        std::string row3=" | "+fw("",4)+"  "+v1.str()+" |  | "+fw("",4)+"  "+v2.str()+" | ";
-        std::string row4=" +"+fw("",32,'-')+"+  +"+fw("",32,'-')+"+ ";
-        std::cout<<boxL(row1);
-        std::cout<<boxL(row2);
-        std::cout<<boxL(row3);
-        std::cout<<boxL(row4);
+    /* Cabecalho da tabela */
+    std::cout << "\n";
+    std::vector<std::pair<std::string,int>> cols = {
+        {"INDICADOR",30}, {"VALOR",15}, {"  INDICADOR",28}, {"VALOR",8}
+    };
+    cabecalhoTabela(cols);
+
+    auto row=[](const std::string& l, const std::string& v,
+                const std::string& l2, const std::string& v2){
+        std::cout << ANSI_WHITE
+                  << fw(l,30) << fwR(v,14) << "  "
+                  << fw(l2,26) << fwR(v2,8)
+                  << ANSI_RESET << "\n";
     };
 
-    ecraVazia();
+    std::ostringstream ss_total; ss_total<<std::fixed<<std::setprecision(2)<<total_dia;
 
-    /* linha 1 */
-    std::cout<<boxL(" +--------------------------------+  +--------------------------------+");
-    std::cout<<boxL(" |  Clientes registados           |  |  Produtos no catalogo          |");
-    std::ostringstream s1,s2;
-    s1<<std::setw(30)<<n_cli; s2<<std::setw(30)<<n_prd;
-    std::cout<<boxL(" |"+s1.str()+"  |  |"+s2.str()+"  |");
-    std::cout<<boxL(" +--------------------------------+  +--------------------------------+");
-    ecraVazia();
-    /* linha 2 */
-    std::cout<<boxL(" +--------------------------------+  +--------------------------------+");
-    std::cout<<boxL(" |  Vendas totais                 |  |  Vendas hoje (EUR)             |");
-    std::ostringstream s3,s4; s3<<std::setw(30)<<n_vnd;
-    s4<<std::fixed<<std::setprecision(2)<<std::setw(30)<<total_dia;
-    std::cout<<boxL(" |"+s3.str()+"  |  |"+s4.str()+"  |");
-    std::cout<<boxL(" +--------------------------------+  +--------------------------------+");
-    ecraVazia();
-    /* linha 3 */
-    std::cout<<boxL(" +--------------------------------+  +--------------------------------+");
-    std::cout<<boxL(" |  Reparacoes em curso           |  |  Orcamentos pendentes          |");
-    std::string rep_str=std::to_string(reps_curso)+" / "+std::to_string(n_rep);
-    std::ostringstream s5,s6;
-    s5<<std::setw(30)<<rep_str; s6<<std::setw(30)<<orcs_pend;
-    std::cout<<boxL(" |"+s5.str()+"  |  |"+s6.str()+"  |");
-    std::cout<<boxL(" +--------------------------------+  +--------------------------------+");
+    row("Clientes registados",  std::to_string(n_cli),
+        "Vendas totais",        std::to_string(n_vnd));
+    row("Produtos no catalogo", std::to_string(n_prd),
+        "Vendas hoje (EUR)",    ss_total.str());
+    row("Reparacoes em curso",  std::to_string(reps_curso)+" / "+std::to_string(n_rep),
+        "Orcamentos pendentes", std::to_string(orcs_pend));
 
-    if(stock_baixo>0){
-        ecraVazia();
-        ecraErr(std::to_string(stock_baixo)+" produto(s) com stock abaixo do minimo!");
+    if(stock_baixo>0) {
+        hline('-');
+        std::cout << ANSI_RED << ANSI_BOLD
+                  << "  ATENCAO: " << stock_baixo
+                  << " produto(s) com stock abaixo do minimo!"
+                  << ANSI_RESET << "\n";
     }
 
+    hline('-');
     pausar();
 }
 
 /* ================================================================
- * Menu principal
+ * MENU PRINCIPAL estilo SSN
+ *
+ *  0-Venda a Publico        A-Clientes
+ *  1-Produtos               B-Orcamentos
+ *  2-Reparacoes             C-Garantias
+ *  3-Dashboard              D-Lojas (admin)
+ *                           E-Utilizadores (admin)
+ *                           L-Logs
+ *  9-Sair  F-Sair
  * ================================================================ */
 static void menuPrincipal() {
     while(true) {
-        iniciarEcra("MENU PRINCIPAL","Menu Principal","Introduza o numero da opcao");
+        g_dica = "SUB-MENU -------------------------------->";
+        iniciarEcra("", "MENU PRINCIPAL", "");
 
-        ecraLinha("  +--------------------------------------+");
-        ecraLinha("  |   GESTAO DE LOJA DE ELECTRONICA      |");
-        ecraLinha("  +--------------------------------------+");
-        ecraVazia();
-        ecraLinha("   1.  Dashboard");
-        ecraLinha("   2.  Clientes");
-        ecraLinha("   3.  Produtos");
-        ecraLinha("   4.  Vendas / Faturas");
-        ecraLinha("   5.  Orcamentos");
-        ecraLinha("   6.  Reparacoes");
-        ecraLinha("   7.  Garantias");
-        if(temPermissao("admin")){
-        ecraLinha("   8.  Lojas");
-        ecraLinha("   9.  Utilizadores");
-        }
-        if(temPermissao("gerente")){
-        ecraLinha("  10.  Logs do sistema");
-        }
-        ecraVazia();
-        ecraLinha("   0.  Sair");
+        /* Cabecalho da area de artigos - igual ao SSN */
+        std::cout << "\n";
+        std::vector<std::pair<std::string,int>> cols = {
+            {"ARTIGO",12}, {"QUANTID",10}, {"DESCRICAO",30}, {"T",3}, {"PRECO",10}, {"LJ",4}
+        };
+        cabecalhoTabela(cols);
+        std::cout << "\n";
 
-        fecharEcra();
-        int op=lerInteiro("Opcao: ",0,10);
+        /* Menu em duas colunas */
+        std::vector<MenuItem> esq, dir;
 
-        switch(op){
-            case 0:
-                iniciarEcra("SAIR","Menu Principal > Sair","s=Sair  n=Voltar");
-                fecharEcra();
-                if(lerSimNao("Terminar sessao?")){
+        esq.push_back({"0","Venda a Publico / Nova Venda"});
+        esq.push_back({"1","Clientes"});
+        esq.push_back({"2","Produtos / Catalogo"});
+        esq.push_back({"3","Reparacoes"});
+        esq.push_back({"4","Orcamentos"});
+        esq.push_back({"5","Garantias"});
+        esq.push_back({"6","Dashboard / Resumo"});
+
+        dir.push_back({"A","Pesquisar Cliente"});
+        dir.push_back({"B","Nova Reparacao"});
+        dir.push_back({"C","Verificar Garantia"});
+        dir.push_back({"G","Alertas de Stock"});
+        if(temPermissao("gerente")) dir.push_back({"L","Logs do Sistema"});
+        if(temPermissao("admin"))   dir.push_back({"S","Lojas"});
+        if(temPermissao("admin"))   dir.push_back({"U","Utilizadores"});
+
+        std::cout << "\n";
+        menuDuasColunas(esq, dir, 40);
+        std::cout << "\n";
+        menuItem("9","Sair"); std::cout << "   "; menuItem("F","Sair"); std::cout << "\n";
+        std::cout << "\n";
+        hline('-');
+        /* Linha de SUB-TOTAL como no SSN */
+        std::cout << ANSI_DIM << "                                        "
+                  << "SUB-TOTAL ---------------->" << ANSI_RESET << "\n";
+
+        char op = lerOpcaoMenu("Opcao: ");
+
+        switch(op) {
+            case '0': vendasMenu();         break;
+            case '1': clientesMenu();       break;
+            case '2': produtosMenu();       break;
+            case '3': reparacoesMenu();     break;
+            case '4': orcamentosMenu();     break;
+            case '5': garantiasMenu();      break;
+            case '6': dashboard();          break;
+            case 'A': clientesPesquisar(); pausar(); break;
+            case 'B': reparacoesCriar();             break;
+            case 'C': garantiasVerificar(); pausar(); break;
+            case 'G': produtosAlertasStock(); pausar(); break;
+            case 'L':
+                if(temPermissao("gerente")){ logsListar(); pausar(); }
+                else erroPermissao();
+                break;
+            case 'S':
+                if(temPermissao("admin")) lojasMenu();
+                else erroPermissao();
+                break;
+            case 'U':
+                if(temPermissao("admin")) utilizadoresMenu();
+                else erroPermissao();
+                break;
+            case '9':
+            case 'F':
+                g_dica = "S-Confirmar  N-Voltar";
+                iniciarEcra("","SAIR","");
+                std::cout << "\n";
+                if(lerSimNao("Terminar sessao?")) {
                     authLogout();
                     return;
                 }
                 break;
-            case 1:  dashboard();       break;
-            case 2:  clientesMenu();    break;
-            case 3:  produtosMenu();    break;
-            case 4:  vendasMenu();      break;
-            case 5:  orcamentosMenu();  break;
-            case 6:  reparacoesMenu();  break;
-            case 7:  garantiasMenu();   break;
-            case 8:
-                if(temPermissao("admin")) lojasMenu();
-                else erroPermissao();
-                break;
-            case 9:
-                if(temPermissao("admin")) utilizadoresMenu();
-                else erroPermissao();
-                break;
-            case 10:
-                if(temPermissao("gerente")){ logsListar(); pausar(); }
-                else erroPermissao();
+            default:
+                msgErr("Opcao invalida");
                 break;
         }
     }
 }
 
 /* ================================================================
- * Ecra de login
+ * ECRA DE LOGIN estilo SSN
  * ================================================================ */
 static bool ecrLogin() {
-    iniciarEcra("LOGIN","","Introduza as credenciais");
-    ecraVazia();
-    ecraLinha("  +--------------------------------------+");
-    ecraLinha("  |      TECHFIX - SISTEMA DE GESTAO     |");
-    ecraLinha("  |      Loja de Reparacao e Venda        |");
-    ecraLinha("  +--------------------------------------+");
-    ecraVazia();
-    fecharEcra();
+    cls();
+    std::cout << ANSI_BG_BLACK;
+
+    /* Cabecalho simplificado sem sessao */
+    std::cout << ANSI_BOLD << ANSI_WHITE;
+    std::cout << fw("TECHFIX - SISTEMA DE GESTAO",50)
+              << fw("DATA : "+dataFormatada(),30) << "\n";
+    std::cout << fw("Loja de Reparacao e Venda de Electronica",50)
+              << fw(horaAtual(),30) << "\n";
+    std::cout << ANSI_RESET;
+    hline('=');
+
+    std::cout << "\n\n";
+    std::cout << ANSI_WHITE;
+    std::cout << "  IDENTIFICACAO DO OPERADOR\n";
+    hline('-',40);
+    std::cout << ANSI_RESET;
+    std::cout << "\n";
+
     return authLogin();
 }
 
 /* ================================================================
  * MAIN
  * ================================================================ */
-int main(){
+int main() {
     std::setlocale(LC_ALL,"");
     uiInitConsole();
     inicializarPastas();
     authInicializar();
 
-    for(int i=0;i<3;++i){
-        if(ecrLogin()){
+    for(int i=0;i<3;++i) {
+        if(ecrLogin()) {
+            /* Carregar nome da loja */
+            JsonValue lojas = jsonParseFile(FILE_LOJAS);
+            if(lojas.isArray() && !lojas.arr.empty()) {
+                g_sessao.loja_nome = lojas.arr[0]["nome"].asString();
+                g_sessao.loja_id   = lojas.arr[0]["id"].asString();
+            } else {
+                g_sessao.loja_nome = "TECHFIX";
+            }
+            /* Carregar nome completo do utilizador */
+            JsonValue utils = jsonParseFile(FILE_UTILIZADORES);
+            if(utils.isArray())
+                for(size_t j=0;j<utils.arr.size();j++)
+                    if(utils.arr[j]["username"].asString()==g_sessao.username)
+                        g_sessao.nome = utils.arr[j]["nome"].asString();
+
             menuPrincipal();
             break;
         }
-        if(i<2){
+        if(i<2) {
             msgErr("Credenciais invalidas. Tente novamente.");
-            pausar("Prima Enter...");
+            pausar();
         } else {
             msgErr("Maximo de tentativas atingido.");
-            pausar("Prima Enter para sair...");
+            pausar("Prima ENTER para sair...");
         }
     }
 
     cls();
-    std::cout<<"\n  Sistema encerrado. Ate breve!\n\n";
+    std::cout << "\n  Sistema encerrado. Ate breve!\n\n";
     return 0;
 }

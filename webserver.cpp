@@ -513,59 +513,127 @@ static void handleConnection(SOCKET client_fd) {
     CLOSE_SOCKET(client_fd);
 }
 
+/* clientThread e main estao definidos abaixo */
+static void handleConnection(SOCKET client_fd);
+
 /* ================================================================
- * Thread por conexao
+ * Obter IP publico/local da maquina
  * ================================================================ */
+static std::string getLocalIP() {
+    /* Abrir socket UDP para 8.8.8.8 - nao envia dados, apenas
+       determina qual interface/IP seria usado para saida */
+    int s = socket(AF_INET, SOCK_DGRAM, 0);
+    if (s < 0) return "127.0.0.1";
+    struct sockaddr_in dst;
+    memset(&dst, 0, sizeof(dst));
+    dst.sin_family      = AF_INET;
+    dst.sin_port        = htons(53);
+    dst.sin_addr.s_addr = inet_addr("8.8.8.8");
+    connect(s, (struct sockaddr*)&dst, sizeof(dst));
+    struct sockaddr_in src;
+    socklen_t len = sizeof(src);
+    getsockname(s, (struct sockaddr*)&src, &len);
+    close(s);
+    return std::string(inet_ntoa(src.sin_addr));
+}
+
+/* Log de conexoes com timestamp */
+static void logConn(const std::string& ip, const std::string& msg) {
+    time_t t = time(NULL);
+    char buf[20];
+    strftime(buf, sizeof(buf), "%H:%M:%S", localtime(&t));
+    printf("  [%s] %s — %s\n", buf, ip.c_str(), msg.c_str());
+    fflush(stdout);
+}
+
+/* ================================================================
+ * Thread por conexao (com log de IP)
+ * ================================================================ */
+struct ClientInfo { SOCKET fd; char ip[INET_ADDRSTRLEN]; };
+
 static void* clientThread(void* arg) {
-    SOCKET fd=(SOCKET)(intptr_t)arg;
-    handleConnection(fd);
+    ClientInfo* ci = (ClientInfo*)arg;
+    logConn(ci->ip, "ligado");
+    handleConnection(ci->fd);
+    logConn(ci->ip, "desligado");
+    delete ci;
     return NULL;
 }
 
 /* ================================================================
  * MAIN do servidor
  * ================================================================ */
-int main() {
+int main(int argc, char* argv[]) {
+    int port = PORT;
+    /* Aceitar porta como argumento: ./webserver 8080 */
+    if (argc >= 2) port = atoi(argv[1]);
+    if (port <= 0 || port > 65535) port = PORT;
+
 #ifdef _WIN32
     WSADATA wsa; WSAStartup(MAKEWORD(2,2),&wsa);
 #else
-    signal(SIGPIPE,SIG_IGN);
-    signal(SIGCHLD,SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
+    signal(SIGCHLD, SIG_IGN);
 #endif
 
-    SOCKET srv=socket(AF_INET,SOCK_STREAM,0);
-    if(srv==INVALID_SOCKET){perror("socket");return 1;}
+    SOCKET srv = socket(AF_INET, SOCK_STREAM, 0);
+    if (srv == INVALID_SOCKET) { perror("socket"); return 1; }
 
-    int opt=1;
-    setsockopt(srv,SOL_SOCKET,SO_REUSEADDR,(const char*)&opt,sizeof(opt));
+    /* SO_REUSEADDR: reutilizar porta imediatamente apos restart */
+    int opt = 1;
+    setsockopt(srv, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt));
+#ifdef SO_REUSEPORT
+    setsockopt(srv, SOL_SOCKET, SO_REUSEPORT, (const char*)&opt, sizeof(opt));
+#endif
 
     struct sockaddr_in addr;
-    memset(&addr,0,sizeof(addr));
-    addr.sin_family=AF_INET;
-    addr.sin_addr.s_addr=INADDR_ANY;
-    addr.sin_port=htons(PORT);
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family      = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;   /* 0.0.0.0 — aceitar de qualquer IP */
+    addr.sin_port        = htons(port);
 
-    if(bind(srv,(struct sockaddr*)&addr,sizeof(addr))<0){
-        perror("bind"); return 1;
+    if (bind(srv, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+        perror("bind");
+        fprintf(stderr, "  ERRO: porta %d ja em uso. Tente: pkill webserver\n", port);
+        return 1;
     }
-    if(listen(srv,16)<0){perror("listen");return 1;}
+    if (listen(srv, 32) < 0) { perror("listen"); return 1; }
 
-    std::cout << "\n";
-    std::cout << "  ╔══════════════════════════════════╗\n";
-    std::cout << "  ║   TECHFIX - Servidor Web         ║\n";
-    std::cout << "  ╠══════════════════════════════════╣\n";
-    std::cout << "  ║   Porta  : " << PORT << "                  ║\n";
-    std::cout << "  ║   URL    : http://localhost:" << PORT << "  ║\n";
-    std::cout << "  ║   Ctrl+C : Parar servidor        ║\n";
-    std::cout << "  ╚══════════════════════════════════╝\n\n";
+    std::string local_ip = getLocalIP();
 
-    while(true){
+    printf("\n");
+    printf("  ╔════════════════════════════════════════════╗\n");
+    printf("  ║   TECHFIX — Servidor Web Iniciado          ║\n");
+    printf("  ╠════════════════════════════════════════════╣\n");
+    printf("  ║                                            ║\n");
+    printf("  ║   Bind    : 0.0.0.0:%d (todas as IFs)  ║\n", port);
+    printf("  ║                                            ║\n");
+    printf("  ║   Local   : http://localhost:%d/         ║\n", port);
+    printf("  ║   Rede    : http://%-22s ║\n", (local_ip+":"+std::to_string(port)+"/").c_str());
+    printf("  ║                                            ║\n");
+    printf("  ║   Se nao acessivel externamente:          ║\n");
+    printf("  ║   sudo ufw allow %d/tcp                ║\n", port);
+    printf("  ║   sudo iptables -I INPUT -p tcp           ║\n");
+    printf("  ║     --dport %d -j ACCEPT              ║\n", port);
+    printf("  ║                                            ║\n");
+    printf("  ║   Ctrl+C  : Parar servidor                ║\n");
+    printf("  ║                                            ║\n");
+    printf("  ╚════════════════════════════════════════════╝\n\n");
+    printf("  Aguardando conexoes...\n\n");
+    fflush(stdout);
+
+    while (true) {
         struct sockaddr_in cli_addr;
-        socklen_t cli_len=sizeof(cli_addr);
-        SOCKET cli=accept(srv,(struct sockaddr*)&cli_addr,&cli_len);
-        if(cli==INVALID_SOCKET) continue;
+        socklen_t cli_len = sizeof(cli_addr);
+        SOCKET cli = accept(srv, (struct sockaddr*)&cli_addr, &cli_len);
+        if (cli == INVALID_SOCKET) continue;
+
+        ClientInfo* ci = new ClientInfo;
+        ci->fd = cli;
+        inet_ntop(AF_INET, &cli_addr.sin_addr, ci->ip, sizeof(ci->ip));
+
         pthread_t t;
-        pthread_create(&t,NULL,clientThread,(void*)(intptr_t)cli);
+        pthread_create(&t, NULL, clientThread, ci);
         pthread_detach(t);
     }
 
