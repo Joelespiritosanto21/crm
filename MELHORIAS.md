@@ -3,6 +3,7 @@
 ## 1. Interface de Utilizador Aprimorada ✓
 
 ### Arquivo: `ui.h` e `ui.cpp`
+
 Criado novo sistema de UI com:
 
 - **Limpeza automática de ecrã** — antes de cada menu/operação
@@ -41,6 +42,7 @@ g_ui.delay(500);  // 500ms
 ### Melhorias Implementadas:
 
 #### `main.cpp`
+
 ```cpp
 // Suporte cross-platform para criação de diretórios
 #ifdef _WIN32
@@ -53,6 +55,7 @@ g_ui.delay(500);  // 500ms
 ```
 
 #### `auth.cpp`
+
 ```cpp
 // Leitura de password segura (sem eco)
 // Windows: utiliza _getch()
@@ -66,6 +69,7 @@ g_ui.delay(500);  // 500ms
 ```
 
 #### `ui.h`
+
 ```cpp
 // Delay visual cross-platform
 void delay(int ms) {
@@ -111,18 +115,19 @@ if (!iniciarServidorWeb()) {
 ```
 
 #### Acesso:
+
 - **URL**: `http://localhost:2021`
 - **Porta**: 2021
 - **Interface**: Terminal web preto/branco (sem cores)
 
 #### Rotas Disponíveis:
 
-| Rota | Método | Descrição |
-|------|--------|-----------|
-| `/` | GET | Página principal com terminal |
-| `/index.html` | GET | Mesmo que `/` |
-| `/api/status` | GET | Status JSON do servidor |
-| `/api/cmd` | POST | Executar comando (futura integração) |
+| Rota          | Método | Descrição                            |
+| ------------- | ------ | ------------------------------------ |
+| `/`           | GET    | Página principal com terminal        |
+| `/index.html` | GET    | Mesmo que `/`                        |
+| `/api/status` | GET    | Status JSON do servidor              |
+| `/api/cmd`    | POST   | Executar comando (futura integração) |
 
 #### Interface Web Features:
 
@@ -202,17 +207,20 @@ cl /std:c++17 /O2 /EHsc /W4 \
 ## 6. Execução
 
 ### CLI (Terminal Local):
+
 ```bash
 ./gestao           # Linux/macOS
 gestao.exe         # Windows
 ```
 
 Display:
+
 - Primeiro login com `adm` / `admin123`
 - Menus com limpeza automática de ecrã
 - Interface preto/branco profissional
 
 ### Web (Terminal Interativo):
+
 1. Executar programa: `./gestao`
 2. Abrir navegador: `http://localhost:2021`
 3. Interagir com terminal web
@@ -223,19 +231,19 @@ Display:
 
 ### Nova Class `InterfaceUI` (ui.h):
 
-| Método | Descrição |
-|--------|-----------|
-| `inicializar()` | Setup inicial (tamanho, limpeza) |
-| `limparEcraCompleto()` | Limpa tela |
-| `definirTamanhoJanela(w, h)` | Define dimensões (funciona em Windows) |
-| `mostrarMenu(titulo, opcoes)` | Menu formatado com limpeza |
-| `mostrarSubmenu(titulo, opcoes)` | Submenu formatado |
-| `mostrarResultado(titulo, conteudo)` | Resultado operação |
-| `titulo_grande(t)` | Título grande com bordas |
-| `subtitulo(t)` | Subtítulo com línhas |
-| `pausar(msg)` | Pausa com mensagem |
-| `delay(ms)` | Delay em milissegundos |
-| `linha(char, n)` | Desenha linha separadora |
+| Método                               | Descrição                              |
+| ------------------------------------ | -------------------------------------- |
+| `inicializar()`                      | Setup inicial (tamanho, limpeza)       |
+| `limparEcraCompleto()`               | Limpa tela                             |
+| `definirTamanhoJanela(w, h)`         | Define dimensões (funciona em Windows) |
+| `mostrarMenu(titulo, opcoes)`        | Menu formatado com limpeza             |
+| `mostrarSubmenu(titulo, opcoes)`     | Submenu formatado                      |
+| `mostrarResultado(titulo, conteudo)` | Resultado operação                     |
+| `titulo_grande(t)`                   | Título grande com bordas               |
+| `subtitulo(t)`                       | Subtítulo com línhas                   |
+| `pausar(msg)`                        | Pausa com mensagem                     |
+| `delay(ms)`                          | Delay em milissegundos                 |
+| `linha(char, n)`                     | Desenha linha separadora               |
 
 ---
 
@@ -265,16 +273,19 @@ Display:
 ## 10. Notas Técnicas
 
 ### Performance
+
 - **UI**: rendering mínimo, sem overhead (funções inline)
 - **Servidor**: servidor HTTP simples, adequado para <100 conexões simultâneas
 - **Threads**: uso de `std::thread` para servidor em background
 
 ### Segurança
+
 - Senhas continue criptografadas com SHA-256
 - HTML escaping em interface web
 - Validação de input em todas as rotas
 
 ### Compatibilidade de Versão Compilador
+
 - **GCC**: 7.0+
 - **Clang**: 5.0+
 - **MSVC**: 2017+
@@ -284,26 +295,26 @@ Display:
 
 ## Sumário das Alterações
 
-| Arquivo | Tipo | Alteração |
-|---------|------|-----------|
-| `ui.h` | NOVO | Sistema UI aprimorado |
-| `ui.cpp` | NOVO | Instância global de InterfaceUI |
-| `server.h` | NOVO | Servidor HTTP minimalista |
-| `server.cpp` | NOVO | Implementação servidor web |
-| `main.cpp` | MODIFICADO | Integração UI + servidor |
-| `common.h` | MODIFICADO | Include de ui.h |
-| `auth.cpp` | MODIFICADO | Compatibilidade Windows |
-| `clientes.h` | MODIFICADO | Removido #include <optional> |
-| `json_utils.h` | MODIFICADO | Corrigido structured bindings |
-| `Makefile` | MODIFICADO | Suporte Windows/Linux |
-| `iniciado` | NOVO | Este documento |
+| Arquivo        | Tipo       | Alteração                       |
+| -------------- | ---------- | ------------------------------- |
+| `ui.h`         | NOVO       | Sistema UI aprimorado           |
+| `ui.cpp`       | NOVO       | Instância global de InterfaceUI |
+| `server.h`     | NOVO       | Servidor HTTP minimalista       |
+| `server.cpp`   | NOVO       | Implementação servidor web      |
+| `main.cpp`     | MODIFICADO | Integração UI + servidor        |
+| `common.h`     | MODIFICADO | Include de ui.h                 |
+| `auth.cpp`     | MODIFICADO | Compatibilidade Windows         |
+| `clientes.h`   | MODIFICADO | Removido #include <optional>    |
+| `json_utils.h` | MODIFICADO | Corrigido structured bindings   |
+| `Makefile`     | MODIFICADO | Suporte Windows/Linux           |
+| `iniciado`     | NOVO       | Este documento                  |
 
 ---
 
 **Total de Linhas Adicionadas**: ~1500  
 **Compatibilidade**: Windows + Linux + macOS  
 **Dependências Externas**: 0 (apenas C++ std)  
-**Tempo de Compilação**: ~5-10 segundos  
+**Tempo de Compilação**: ~5-10 segundos
 
 ---
 

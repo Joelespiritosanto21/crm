@@ -200,12 +200,15 @@ int main() {
     linha('=', LARGURA_JANELA);
     
     // Iniciar servidor web na porta 2021
-    std::cout << "\n  [SERVIDOR] Iniciando interface web na porta 2021...\n";
-    if (!iniciarServidorWeb()) {
-        std::cout << "  [AVISO] Não foi possível iniciar servidor web\n";
-    } else {
-        std::cout << "  [OK] Servidor web ativo: http://localhost:2021\n";
-    }
+    // Comentado por enquanto - usar versão de linha de comando
+    // std::cout << "\n  [SERVIDOR] Iniciando interface web na porta 2021...\n";
+    // if (!iniciarServidorWeb()) {
+    //     std::cout << "  [AVISO] Não foi possível iniciar servidor web\n";
+    // } else {
+    //     std::cout << "  [OK] Servidor web ativo: http://localhost:2021\n";
+    // }
+
+    std::cout << "\n  [INFO] Interface CLI ativa. Servidor web (porta 2021) desabilitado por agora.\n";
 
     std::cout << "\n";
     pausar();
