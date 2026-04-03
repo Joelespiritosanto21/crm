@@ -13,7 +13,8 @@ Write-Host "Copiando $source para $destination..."
 try {
     scp -P 22 $source $destination
     Write-Host "✓ Arquivo copiado com sucesso!"
-} catch {
+}
+catch {
     Write-Host "✗ Erro ao copiar: $_"
     Write-Host ""
     Write-Host "Alternativa: Copie manualmente o arquivo server.cpp"

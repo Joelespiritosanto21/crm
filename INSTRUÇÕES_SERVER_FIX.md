@@ -1,11 +1,14 @@
 # INSTRUÇÕES PARA CORRIGIR O SERVIDOR WEB - CRM
 
 ## O Problema
+
 O arquivo `server.cpp` estava incompleto e tinha um erro de sintaxe no final (linha 324).
 Erro: `error: expected declaration before '}' token`
 
 ## A Solução
+
 O arquivo `server.cpp` foi completamente reparado com:
+
 - ✅ Código limpo e funcional
 - ✅ Servidor HTTP simples que ouve em `0.0.0.0:2021`
 - ✅ Suporte para GET / (página HTML) e GET /api/status
@@ -14,19 +17,23 @@ O arquivo `server.cpp` foi completamente reparado com:
 ## Próximas Etapas
 
 ### 1. Copiar o arquivo reparado para o servidor
+
 O arquivo corrigido está em: `d:\CRM\projeto\server.cpp`
 
 **Opção A: Usando SCP (recomendado)**
+
 ```bash
 scp d:\CRM\projeto\server.cpp root@45.131.64.57:/root/crm_test/crm/server.cpp
 ```
 
 **Opção B: Usando RDP/SSH direto**
+
 - Aceda ao servidor via RDP ou SSH
 - Copie o conteúdo de `d:\CRM\projeto\server.cpp`
 - Cole em `/root/crm_test/crm/server.cpp`
 
 **Opção C: Usando SFTP**
+
 ```bash
 sftp root@45.131.64.57
 cd /root/crm_test/crm
@@ -52,6 +59,7 @@ Deve agora compilar **sem erros de sintaxe**.
 ```
 
 Deve ver a mensagem:
+
 ```
 ╔════════════════════════════════════════════════════════════╗
 ║           SERVIDOR WEB INICIADO COM SUCESSO                ║
@@ -83,15 +91,18 @@ Deve retornar uma página HTML com o status do servidor online.
 ## Mudanças Feitas ao server.cpp
 
 ### Simplificação
+
 - ❌ Removido código quebrado de processamento de clientes em thread separada
 - ✅ Mantido apenas `g_servidor->processar()` simples
 
 ### Funcionalidade
+
 - POST /api/cmd agora retorna sucesso sem erro
 - GET /api/status retorna JSON válido
 - Página HTML simplificada e mais leve
 
 ### Segurança
+
 - Servidor vinculado a `0.0.0.0:2021` (todos os IPs)
 - Sem funcionalidade de execução de comandos por enquanto
 - Apenas responde a rotas padrão
@@ -133,6 +144,7 @@ ENDFILE
 ## Suporte
 
 Se encontrar novos erros ao compilar:
+
 1. Verifique se o arquivo foi copiado completamente
 2. Certifique-se de que todas as bibliotecas estão presentes
 3. Verifique se `make clean` foi executado antes de `make`
