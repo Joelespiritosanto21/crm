@@ -1,0 +1,58 @@
+[
+  {
+    "id": "prd_exemplo_1",
+    "nome": "iPhone 15 Pro 256GB",
+    "descricao": "Apple iPhone 15 Pro 256GB Titânio Natural",
+    "preco": 1199.99,
+    "stock": 5,
+    "stock_minimo": 2,
+    "ean": "0194253720027",
+    "tipo": "produto",
+    "tem_garantia": true,
+    "duracao_garantia": 365,
+    "ativo": true,
+    "criado_em": "2026-01-01 10:00:00"
+  },
+  {
+    "id": "prd_exemplo_2",
+    "nome": "Samsung Galaxy S24",
+    "descricao": "Samsung Galaxy S24 128GB Preto",
+    "preco": 899.99,
+    "stock": 3,
+    "stock_minimo": 1,
+    "ean": "8806094956405",
+    "tipo": "produto",
+    "tem_garantia": true,
+    "duracao_garantia": 730,
+    "ativo": true,
+    "criado_em": "2026-01-01 10:00:00"
+  },
+  {
+    "id": "prd_exemplo_3",
+    "nome": "Substituição Ecrã iPhone",
+    "descricao": "Serviço de substituição de ecrã para iPhone",
+    "preco": 120.00,
+    "stock": 0,
+    "stock_minimo": 0,
+    "ean": "",
+    "tipo": "servico",
+    "tem_garantia": true,
+    "duracao_garantia": 90,
+    "ativo": true,
+    "criado_em": "2026-01-01 10:00:00"
+  },
+  {
+    "id": "prd_exemplo_4",
+    "nome": "Carregador USB-C 65W",
+    "descricao": "Carregador rápido USB-C 65W GaN",
+    "preco": 29.99,
+    "stock": 1,
+    "stock_minimo": 3,
+    "ean": "4895184898154",
+    "tipo": "produto",
+    "tem_garantia": false,
+    "duracao_garantia": 0,
+    "ativo": true,
+    "criado_em": "2026-01-01 10:00:00"
+  }
+]
