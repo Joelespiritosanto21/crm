@@ -10,6 +10,7 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
     CXX      = g++
     CXXFLAGS = -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -pthread
+    LDFLAGS  = -lstdc++ -lm
     TARGET   = gestao
     CLEAN_CMD = rm -f
     EXE_EXT  = 
@@ -17,6 +18,7 @@ endif
 ifeq ($(UNAME_S),Darwin)
     CXX      = clang++
     CXXFLAGS = -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -pthread
+    LDFLAGS  = -lstdc++ -lm
     TARGET   = gestao
     CLEAN_CMD = rm -f
     EXE_EXT  = 
@@ -24,15 +26,16 @@ endif
 ifeq ($(OS),Windows_NT)
     CXX      = g++
     CXXFLAGS = -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -pthread -D_WIN32_WINNT=0x0601
+    LDFLAGS  = -lws2_32
     TARGET   = gestao.exe
     CLEAN_CMD = del /Q
     EXE_EXT  = .exe
-    LDFLAGS  = -lws2_32
 endif
 
 # Valores padrão para SO desconhecido
 CXX      ?= g++
 CXXFLAGS ?= -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -pthread
+LDFLAGS  ?= -lstdc++ -lm
 TARGET   ?= gestao
 CLEAN_CMD ?= rm -f
 
