@@ -21,12 +21,14 @@ Sem dependências externas — usa apenas a biblioteca padrão C++.
 - **macOS** (Intel e Apple Silicon)
 - **WSL2** (Windows Subsystem for Linux)
 
-### 🌐 Servidor Web (Próxima Versão)
+### 🌐 Servidor Web ✓ (Versão 2.0)
 
-- Interface HTTP na porta 2021
-- Terminal web interativo
+- **Interface HTTP na porta 2021** ✓
+- **Acessível via IP externo** (0.0.0.0:2021)
 - HTML minimalista preto/branco
+- Endpoints: `/`, `/api/status`, `/api/cmd`
 - Sem dependências JavaScript pesadas
+- **Status:** 🟢 Operacional
 
 ---
 
