@@ -191,3 +191,9 @@ inline std::string gerarNumeroReparacao(int seq) {
     o << "REP-" << std::setw(6) << std::setfill('0') << seq;
     return o.str();
 }
+
+/* ============================================================
+ * Instância global de UI (definida em main.cpp)
+ * ============================================================ */
+#include "ui.h"
+extern InterfaceUI g_ui;

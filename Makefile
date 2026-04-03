@@ -2,14 +2,43 @@
 # Uso: make        → compila
 #      make clean  → limpa binários
 #      make run    → compila e executa
+#
+# Compatível com Windows (MinGW/MSVC) e Linux/macOS
 
-CXX      = g++
-CXXFLAGS = -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter
-TARGET   = gestao
+# Detectar SO
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+    CXX      = g++
+    CXXFLAGS = -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -pthread
+    TARGET   = gestao
+    CLEAN_CMD = rm -f
+    EXE_EXT  = 
+endif
+ifeq ($(UNAME_S),Darwin)
+    CXX      = clang++
+    CXXFLAGS = -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -pthread
+    TARGET   = gestao
+    CLEAN_CMD = rm -f
+    EXE_EXT  = 
+endif
+ifeq ($(OS),Windows_NT)
+    CXX      = g++
+    CXXFLAGS = -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -pthread -D_WIN32_WINNT=0x0601
+    TARGET   = gestao.exe
+    CLEAN_CMD = del /Q
+    EXE_EXT  = .exe
+    LDFLAGS  = -lws2_32
+endif
+
+# Valores padrão para SO desconhecido
+CXX      ?= g++
+CXXFLAGS ?= -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -pthread
+TARGET   ?= gestao
+CLEAN_CMD ?= rm -f
 
 SRCS = main.cpp auth.cpp clientes.cpp produtos.cpp vendas.cpp \
        orcamentos.cpp reparacoes.cpp garantias.cpp lojas.cpp \
-       logs.cpp documentos.cpp
+       logs.cpp documentos.cpp ui.cpp server.cpp
 
 OBJS = $(SRCS:.cpp=.o)
 
@@ -19,9 +48,12 @@ dirs:
 	@mkdir -p data docs
 
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 	@echo ""
 	@echo "  [OK] Compilação concluída: ./$(TARGET)"
+	@echo ""
+	@echo "  Interface CLI: execute ./$(TARGET)"
+	@echo "  Interface Web: http://localhost:2021 (após iniciar)"
 	@echo ""
 
 %.o: %.cpp
@@ -31,7 +63,7 @@ run: all
 	./$(TARGET)
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	$(CLEAN_CMD) $(OBJS) $(TARGET)
 	@echo "  Limpeza concluída."
 
 clean-data:
@@ -40,3 +72,4 @@ clean-data:
 	mkdir -p data docs
 
 .PHONY: all dirs run clean clean-data
+

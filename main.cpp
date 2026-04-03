@@ -9,7 +9,17 @@
  */
 
 #include <iostream>
-#include <sys/stat.h>
+#include <locale>
+#include <iomanip>
+#include <cstdlib>
+
+#ifdef _WIN32
+    #include <direct.h>
+    #define MKDIR(p) _mkdir(p)
+#else
+    #include <sys/stat.h>
+    #define MKDIR(p) mkdir(p, 0755)
+#endif
 
 #include "common.h"
 #include "auth.h"
@@ -22,6 +32,8 @@
 #include "lojas.h"
 #include "logs.h"
 #include "documentos.h"
+#include "ui.h"
+#include "server.h"
 
 /* Sessão global */
 Sessao g_sessao;
@@ -30,8 +42,8 @@ Sessao g_sessao;
  * Criar estrutura de pastas necessárias
  * ================================================================ */
 static void inicializarPastas() {
-    mkdir(DATA_DIR, 0755);
-    mkdir(DOCS_DIR, 0755);
+    MKDIR(DATA_DIR);
+    MKDIR(DOCS_DIR);
 }
 
 /* ================================================================
@@ -173,25 +185,50 @@ int main() {
     // Configurar locale para suporte a caracteres PT
     std::setlocale(LC_ALL, "");
 
+    // Inicializar interface
+    g_ui.inicializar();
+
+    // Criar estrutura de pastas
     inicializarPastas();
     authInicializar();
 
-    titulo("SISTEMA DE GESTÃO — ELETRÓNICA");
-    std::cout << "  Loja de Reparação e Venda de Equipamentos Eletrónicos\n\n";
+    // Iniciar servidor web (background)
+    std::cout << "\n";
+    linha('=', LARGURA_JANELA);
+    std::cout << "  SISTEMA DE GESTÃO — ELETRÓNICA\n";
+    std::cout << "  Loja de Reparação e Venda de Equipamentos Eletrónicos\n";
+    linha('=', LARGURA_JANELA);
+    
+    // Iniciar servidor web na porta 2021
+    std::cout << "\n  [SERVIDOR] Iniciando interface web na porta 2021...\n";
+    if (!iniciarServidorWeb()) {
+        std::cout << "  [AVISO] Não foi possível iniciar servidor web\n";
+    } else {
+        std::cout << "  [OK] Servidor web ativo: http://localhost:2021\n";
+    }
+
+    std::cout << "\n";
+    pausar();
 
     // Tentativas de login
-    for (int i=0; i<3; ++i) {
+    for (int i = 0; i < 3; ++i) {
+        g_ui.limparEcraCompleto();
+        g_ui.mostraTimeslot();
+        
         if (authLogin()) {
             menuPrincipal();
             break;
         }
         if (i < 2) {
             std::cout << "  Tente novamente.\n\n";
+            pausar();
         } else {
             std::cout << "  Máximo de tentativas atingido. A sair.\n";
+            pausar();
         }
     }
 
-    std::cout << "\n  Sistema encerrado.\n";
+    g_ui.limparEcraCompleto();
+    std::cout << "\n  Sistema encerrado.\n\n";
     return 0;
 }

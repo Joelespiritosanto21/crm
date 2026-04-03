@@ -7,13 +7,38 @@
 #include "logs.h"
 #include <iostream>
 #include <iomanip>
-#include <termios.h>
-#include <unistd.h>
 
-/* Leitura de password sem eco */
+#ifdef _WIN32
+    #include <conio.h>
+#else
+    #include <termios.h>
+    #include <unistd.h>
+    #define STDIN_FILENO 0
+    #define ECHO 8
+#endif
+
+/* Leitura de password sem eco (compatível Windows/Linux) */
 static std::string lerPassword(const std::string& prompt) {
     std::cout << prompt;
     std::string pw;
+    
+#ifdef _WIN32
+    // Windows: usar _getch
+    char ch;
+    while ((ch = _getch()) != '\r') {
+        if (ch == '\b') {
+            if (!pw.empty()) {
+                pw.pop_back();
+                std::cout << "\b \b";
+            }
+        } else {
+            pw += ch;
+            std::cout << '*';
+        }
+    }
+    std::cout << "\n";
+#else
+    // Linux/Unix: usar termios
     struct termios oldt, newt;
     if (tcgetattr(STDIN_FILENO, &oldt) == 0) {
         newt = oldt;
@@ -25,6 +50,8 @@ static std::string lerPassword(const std::string& prompt) {
         std::getline(std::cin, pw);
     }
     std::cout << "\n";
+#endif
+    
     return pw;
 }
 
