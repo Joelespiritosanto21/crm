@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <sstream>
 #include "json_utils.h"
+#ifdef _WIN32
+#include <direct.h>
+#endif
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -41,6 +44,10 @@ static void close_socket(sock_t s) {
 int main(int argc, char** argv) {
     int port = 2022;
     if (argc>1) port = atoi(argv[1]);
+    std::string expected_token = "";
+    if (argc>2) expected_token = argv[2];
+    const char* env_tok = getenv("API_TOKEN");
+    if (env_tok && expected_token.empty()) expected_token = std::string(env_tok);
 
 #ifdef _WIN32
     WSADATA wsa;
@@ -96,6 +103,18 @@ int main(int argc, char** argv) {
             continue;
         }
 
+        // If server was started with a token, require it in requests
+        if (!expected_token.empty()) {
+            std::string tok = req["token"].asString();
+            if (tok != expected_token) {
+                JsonObject r; r["status"] = JsonValue("error"); r["msg"] = JsonValue("unauthorized");
+                std::string out = jsonSerialize(JsonValue(r),0) + "\n";
+                send(client, out.c_str(), (int)out.size(), 0);
+                close_socket(client);
+                continue;
+            }
+        }
+
         std::string action = req["action"].asString();
         if (action=="get_clientes") {
             JsonValue clientes = jsonParseFile(std::string("server_data/clientes.json"));
@@ -142,6 +161,30 @@ int main(int argc, char** argv) {
                         if (vendas.isArray()) arr = vendas.arr;
                         arr.push_back(data);
                         jsonSaveFile(std::string("server_data/vendas.json"), JsonValue(arr));
+                        applied++;
+                    }
+                    else if (op=="create_transferencia") {
+                        JsonValue tr = jsonParseFile(std::string("server_data/transferencias.json"));
+                        JsonArray arr;
+                        if (tr.isArray()) arr = tr.arr;
+                        arr.push_back(data);
+                        jsonSaveFile(std::string("server_data/transferencias.json"), JsonValue(arr));
+                        applied++;
+                    }
+                    else if (op=="create_fornecedor") {
+                        JsonValue frs = jsonParseFile(std::string("server_data/fornecedores.json"));
+                        JsonArray arr;
+                        if (frs.isArray()) arr = frs.arr;
+                        arr.push_back(data);
+                        jsonSaveFile(std::string("server_data/fornecedores.json"), JsonValue(arr));
+                        applied++;
+                    }
+                    else if (op=="create_encomenda") {
+                        JsonValue en = jsonParseFile(std::string("server_data/encomendas.json"));
+                        JsonArray arr;
+                        if (en.isArray()) arr = en.arr;
+                        arr.push_back(data);
+                        jsonSaveFile(std::string("server_data/encomendas.json"), JsonValue(arr));
                         applied++;
                     }
                     // outras operacoes podem ser adicionadas aqui

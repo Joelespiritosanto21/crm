@@ -8,6 +8,7 @@
 #include "data_layer.h"
 #include "sync_manager.h"
 #include <iostream>
+#include "pedidos.h"
 #include <iomanip>
 #include <algorithm>
 
@@ -80,6 +81,10 @@ void produtosCriar() {
     std::string descricao = lerString("  Descrição: ");
 
     double preco = lerDouble("  Preço (EUR): ");
+    double preco_custo = 0.0;
+    if (lerSimNao("  Inserir preço de custo?")) {
+        preco_custo = lerDouble("  Preço de custo (EUR): ");
+    }
 
     int stock = 0;
     if (tipo=="produto") {
@@ -117,6 +122,7 @@ void produtosCriar() {
     novo["nome"]             = JsonValue(nome);
     novo["descricao"]        = JsonValue(descricao);
     novo["preco"]            = JsonValue(preco);
+    novo["preco_custo"]      = JsonValue(preco_custo);
     novo["stock"]            = JsonValue((long long)stock);
     novo["stock_minimo"]     = JsonValue((long long)stock_minimo);
     novo["ean"]              = JsonValue(ean);
@@ -171,12 +177,17 @@ void produtosListar() {
         std::string garantia_str = p["tem_garantia"].asBool() ?
             std::to_string((int)p["duracao_garantia"].asInt()) + "d" : "---";
 
+        double preco_val = p["preco"].asDouble();
+        double custo_val = p.has("preco_custo") ? p["preco_custo"].asDouble() : 0.0;
+        double margem_pc = (preco_val>0.0) ? ((preco_val - custo_val)/preco_val*100.0) : 0.0;
+        std::ostringstream preco_s; preco_s<<std::fixed<<std::setprecision(2)<<preco_val<<"EUR";
+        std::ostringstream margem_s; margem_s<<std::fixed<<std::setprecision(0)<<margem_pc<<"%";
         std::cout << std::setw(28) << p["nome"].asString().substr(0,27)
-                  << std::setw(10) << tipo
-                  << std::setw(10) << (std::to_string((int)(p["preco"].asDouble()*100)/100.0) + "EUR")
-                  << std::setw(8)  << (tipo=="produto" ? std::to_string(stk)+alerta : "---")
-                  << std::setw(14) << p["ean"].asString()
-                  << garantia_str << "\n";
+              << std::setw(10) << tipo
+              << std::setw(10) << preco_s.str() << "(" << margem_s.str() << ")"
+              << std::setw(8)  << (tipo=="produto" ? std::to_string(stk)+alerta : "---")
+              << std::setw(14) << p["ean"].asString()
+              << garantia_str << "\n";
         ++count;
     }
     std::cout << "\n  " << count << " produto(s).\n";
@@ -293,6 +304,17 @@ void produtosAlertasStock() {
     }
     if (!count) std::cout << "  Sem alertas de stock.\n";
     else std::cout << "\n  " << count << " produto(s) com stock baixo!\n";
+    if (count>0) {
+        if (lerSimNao("  Gerar encomenda para algum produto?")) {
+            std::string pid = lerString("  ID do produto: ");
+            int q = lerInteiro("  Quantidade a encomendar: ", 1, 999999);
+            if (!pid.empty()) {
+                // criar encomenda
+                pedidosCriarParaProduto(pid, q);
+                std::cout << "  Encomenda criada para produto " << pid << " (q=" << q << ").\n";
+            }
+        }
+    }
 }
 
 /* ================================================================

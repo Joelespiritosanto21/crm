@@ -27,6 +27,12 @@
 #include "lojas.h"
 #include "logs.h"
 #include "documentos.h"
+#include "caixa.h"
+#include "devolucoes.h"
+#include "transferencias.h"
+#include "fornecedores.h"
+#include "relatorios.h"
+#include "pedidos.h"
 #include "sync_manager.h"
 
 /* ── Globais ─────────────────────────────────────────────── */
@@ -164,6 +170,12 @@ static void menuPrincipal() {
         if(temPermissao("admin"))   dir.push_back({"S","Lojas"});
         if(temPermissao("admin"))   dir.push_back({"U","Utilizadores"});
         dir.push_back({"Z","Sincronizar com servidor"});
+        dir.push_back({"K","Caixa"});
+        dir.push_back({"E","Devoluções"});
+        dir.push_back({"T","Transferências"});
+        dir.push_back({"O","Fornecedores"});
+        dir.push_back({"R","Relatórios"});
+        dir.push_back({"N","Encomendas"});
 
         std::cout << "\n";
         menuDuasColunas(esq, dir, 40);
@@ -195,6 +207,24 @@ static void menuPrincipal() {
                 break;
             case 'Z':
                 syncManagerMenu();
+                break;
+            case 'K':
+                caixaMenu();
+                break;
+            case 'E':
+                devolucoesMenu();
+                break;
+            case 'T':
+                transferenciasMenu();
+                break;
+            case 'O':
+                fornecedoresMenu();
+                break;
+            case 'R':
+                relatoriosMenu();
+                break;
+            case 'N':
+                pedidosMenu();
                 break;
             case 'S':
                 if(temPermissao("admin")) lojasMenu();

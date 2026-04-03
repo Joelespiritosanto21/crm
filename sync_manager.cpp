@@ -65,6 +65,7 @@ void syncManagerMenu() {
         std::cout << "1) Alterar servidor\n";
         std::cout << "2) Sincronizar agora\n";
         std::cout << "3) Ver estado da fila\n";
+        std::cout << "4) Definir token API\n";
         std::cout << "9) Voltar\n";
         std::cout << "Opcao: ";
         std::string opt; std::getline(std::cin,opt);
@@ -87,6 +88,11 @@ void syncManagerMenu() {
                     std::cout << i+1 << ") " << op << "\n";
                 }
             }
+            std::cout << "Prima ENTER para continuar..."; std::getline(std::cin,opt);
+        } else if (opt[0]=='4') {
+            std::cout << "Token API (enter para remover): "; std::string t; std::getline(std::cin,t);
+            g_api_token = t;
+            std::cout << "Token atualizado.\n";
             std::cout << "Prima ENTER para continuar..."; std::getline(std::cin,opt);
         } else if (opt[0]=='9') {
             break;

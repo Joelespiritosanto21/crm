@@ -1,4 +1,5 @@
 #include "api_client.h"
+#include "common.h"
 #include <string>
 #include <vector>
 #include <iostream>
@@ -8,6 +9,9 @@
 #include <ws2tcpip.h>
 #pragma comment(lib, "Ws2_32.lib")
 using sock_t = SOCKET;
+#ifdef _WIN32
+typedef int ssize_t;
+#endif
 #else
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -63,7 +67,10 @@ static sock_t connect_host(const std::string& host, int port) {
 bool api_send_request(const std::string& host, int port, const JsonValue& req, JsonValue& resp, int /*timeout_ms*/) {
     sock_t s = connect_host(host, port);
     if (s < 0) return false;
-    std::string out = jsonSerialize(req, 0);
+    // attach token if configured
+    JsonValue r = req;
+    if (!g_api_token.empty()) r["token"] = JsonValue(g_api_token);
+    std::string out = jsonSerialize(r, 0);
     out.push_back('\n');
     ssize_t sent = send(s, out.c_str(), (int)out.size(), 0);
     if (sent <= 0) { close_socket(s); return false; }

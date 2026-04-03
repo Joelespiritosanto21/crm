@@ -14,6 +14,9 @@
 #include <algorithm>
 #include <functional>
 #include <ctime>
+#include <random>
+#include <array>
+#include <iomanip>
 
 /* ============================================================
  * JsonValue - representa qualquer valor JSON
@@ -266,9 +269,25 @@ inline bool jsonSaveFile(const std::string& path, const JsonValue& v) {
     return true;
 }
 
-/* Gera ID único baseado em timestamp + contagem */
+/* UUIDv4 generator and ID wrapper */
+inline std::string uuidv4() {
+    std::array<uint8_t,16> b;
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_int_distribution<int> dist(0,255);
+    for (int i=0;i<16;++i) b[i] = (uint8_t)dist(gen);
+    b[6] = (b[6] & 0x0F) | 0x40; // version 4
+    b[8] = (b[8] & 0x3F) | 0x80; // variant
+    std::ostringstream oss;
+    oss << std::hex << std::setfill('0');
+    for (int i=0;i<16;++i) {
+        oss << std::setw(2) << (int)b[i];
+        if (i==3 || i==5 || i==7 || i==9) oss << "-";
+    }
+    return oss.str();
+}
+
+/* Gera ID com prefixo usando UUIDv4 */
 inline std::string generateId(const std::string& prefix) {
-    static long long counter = 0;
-    auto t = ::time(nullptr);
-    return prefix + std::to_string(t) + "_" + std::to_string(++counter);
+    return prefix + uuidv4();
 }

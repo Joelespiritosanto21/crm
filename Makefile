@@ -11,8 +11,8 @@ CXX      = g++
 CXXFLAGS = -std=c++11 -O2 -Wall -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function
 
 SRCS_MAIN = main.cpp auth.cpp clientes.cpp produtos.cpp vendas.cpp \
-            orcamentos.cpp reparacoes.cpp garantias.cpp lojas.cpp \
-            logs.cpp documentos.cpp
+			orcamentos.cpp reparacoes.cpp garantias.cpp lojas.cpp \
+			logs.cpp documentos.cpp caixa.cpp devolucoes.cpp transferencias.cpp fornecedores.cpp relatorios.cpp pedidos.cpp
 
 all: dirs gestao webserver
 

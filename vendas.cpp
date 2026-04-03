@@ -10,6 +10,7 @@
 #include "logs.h"
 #include "data_layer.h"
 #include "sync_manager.h"
+#include "caixa.h"
 #include <iostream>
 #include <iomanip>
 #include <vector>
@@ -170,11 +171,42 @@ void vendasCriar() {
     venda["total"]      = JsonValue(total);
     venda["data"]       = JsonValue(dataAtual());
     venda["vendedor"]   = JsonValue(g_sessao.username);
+    // Método de pagamento
+    std::cout << "\n  Método de pagamento:\n";
+    std::cout << "   1) Dinheiro\n   2) Multibanco (MB)\n   3) Cartão\n   4) Crédito\n";
+    int pm = lerInteiro("  Opção: ", 1, 4);
+    std::string metodo;
+    if (pm==1) metodo = "dinheiro";
+    else if (pm==2) metodo = "mb";
+    else if (pm==3) metodo = "cartao";
+    else metodo = "credito";
+    venda["pagamento_metodo"] = JsonValue(metodo);
+    venda["pagamento_total"] = JsonValue(total);
 
     // Persistir venda localmente
     dl_add_venda_local(JsonValue(venda));
     // Enfileirar para sincronização com servidor
     sync_add_operation("create_venda", JsonValue(venda));
+    // Registar pagamento na caixa, se existir
+    if (!caixaRegistarPagamento(metodo, total)) {
+        std::cout << "  [!] Aviso: não existe caixa aberta. Pagamento não registado na caixa.\n";
+    }
+    // Fidelização: atribuir pontos ao cliente (1 ponto por euro)
+    try {
+        JsonValue clientes = dl_get_clientes_local();
+        if (clientes.isArray()) {
+            for (auto &c : clientes.arr) {
+                if (c["id"].asString() == cliente_id) {
+                    int pontos = 0;
+                    if (c.has("pontos")) pontos = (int)c["pontos"].asInt();
+                    pontos += (int)total;
+                    c["pontos"] = JsonValue((long long)pontos);
+                    dl_save_clientes_local(clientes);
+                    break;
+                }
+            }
+        }
+    } catch(...) {}
 
     /* 5. AUTOMAÇÕES PÓS-VENDA */
     std::vector<std::string> garantias_criadas;
