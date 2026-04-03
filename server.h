@@ -280,3 +280,4 @@ inline std::string descodificarURL(const std::string& url) {
  * Função de inicialização do servidor (definida em server.cpp)
  * ============================================================ */
 bool iniciarServidorWeb();
+void pararServidorWeb();

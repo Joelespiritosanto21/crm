@@ -256,12 +256,58 @@ RespostaHTTP manipularRota(const RequisicaoHTTP& req) {
 }
 
 /* ============================================================
+ * Variáveis globais do servidor
+ * ============================================================ */
+static std::unique_ptr<ServidorHTTP> g_servidor;
+static std::unique_ptr<std::thread> g_thread_servidor;
+
+/* ============================================================
+ * Função para rodar o servidor em background
+ * ============================================================ */
+static void rodarServidorBackground() {
+    if (g_servidor && g_servidor->estaRodando()) {
+        g_servidor->rodar_bloqueante();
+    }
+}
+
+/* ============================================================
  * Iniciar servidor (chamado de main.cpp)
- * Nota: Versão simplificada sem threads no MVP
  * ============================================================ */
 bool iniciarServidorWeb() {
-    // Servidor web será implementado na próxima versão
-    // Por enquanto, retorna sucesso para manter compatibilidade
-    std::cout << "[INFO] Servidor web na porta 2021 será implementado em versão futura\n";
-    return true;
+    try {
+        // Criar instância do servidor na porta 2021
+        g_servidor = std::make_unique<ServidorHTTP>(2021);
+        
+        // Registar manipulador de rotas
+        g_servidor->setManipulador(manipularRota);
+        
+        // Iniciar
+        if (!g_servidor->iniciar()) {
+            std::cerr << "[ERRO] Falha ao iniciar servidor HTTP\n";
+            return false;
+        }
+        
+        // Rodar em thread separada (daemon)
+        g_thread_servidor = std::make_unique<std::thread>(rodarServidorBackground);
+        
+        std::cout << "[INFO] ✓ Servidor web iniciado com sucesso na porta 2021\n";
+        std::cout << "[INFO] Acesse: http://localhost:2021\n";
+        
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "[ERRO] Exceção ao iniciar servidor: " << e.what() << "\n";
+        return false;
+    }
+}
+
+/* ============================================================
+ * Parar servidor (para limpeza no exit)
+ * ============================================================ */
+void pararServidorWeb() {
+    if (g_servidor) {
+        g_servidor->parar();
+    }
+    if (g_thread_servidor && g_thread_servidor->joinable()) {
+        g_thread_servidor->join();
+    }
 }
