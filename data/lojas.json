@@ -1,9 +1,18 @@
 [
   {
-    "id": "loj_principal",
-    "nome": "TechFix - Guimarães",
-    "localizacao": "Rua de Santo António, 10, Guimarães",
+    "criado_em": "2026-01-01 00:00:00",
     "estado": "ativo",
-    "criado_em": "2026-01-01 00:00:00"
+    "id": "loj_guimaraes",
+    "localizacao": "Guimarães",
+    "nome": "TechFix - Guimarães",
+    "telefone": "253000000"
+  },
+  {
+    "criado_em": "2026-04-06 20:33:50",
+    "estado": "ativo",
+    "id": "loj_1775507630_12",
+    "localizacao": "Porto",
+    "nome": "TechFix Porto",
+    "telefone": "220000000"
   }
 ]

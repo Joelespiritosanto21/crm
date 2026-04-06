@@ -1,58 +1,72 @@
 [
   {
-    "id": "prd_exemplo_1",
-    "nome": "iPhone 15 Pro 256GB",
-    "descricao": "Apple iPhone 15 Pro 256GB Titânio Natural",
-    "preco": 1199.99,
-    "stock": 5,
-    "stock_minimo": 2,
-    "ean": "0194253720027",
-    "tipo": "produto",
-    "tem_garantia": true,
+    "ativo": true,
+    "criado_em": "2026-01-01 10:00:00",
+    "descricao": "Apple iPhone 15 Pro 256GB Titanio Natural",
     "duracao_garantia": 365,
-    "ativo": true,
-    "criado_em": "2026-01-01 10:00:00"
+    "ean": "0194253720027",
+    "fornecedor_id": "",
+    "id": "prd_demo_001",
+    "nome": "iPhone 15 Pro 256GB",
+    "preco_custo": 950,
+    "preco_venda": 1199.99,
+    "stock_lojas": {
+      "loj_guimaraes": 5
+    },
+    "stock_minimo": 2,
+    "tem_garantia": true,
+    "tipo": "produto"
   },
   {
-    "id": "prd_exemplo_2",
-    "nome": "Samsung Galaxy S24",
+    "ativo": true,
+    "criado_em": "2026-01-01 10:00:00",
     "descricao": "Samsung Galaxy S24 128GB Preto",
-    "preco": 899.99,
-    "stock": 3,
-    "stock_minimo": 1,
-    "ean": "8806094956405",
-    "tipo": "produto",
-    "tem_garantia": true,
     "duracao_garantia": 730,
-    "ativo": true,
-    "criado_em": "2026-01-01 10:00:00"
-  },
-  {
-    "id": "prd_exemplo_3",
-    "nome": "Substituição Ecrã iPhone",
-    "descricao": "Serviço de substituição de ecrã para iPhone",
-    "preco": 120.00,
-    "stock": 0,
-    "stock_minimo": 0,
-    "ean": "",
-    "tipo": "servico",
+    "ean": "8806094956405",
+    "fornecedor_id": "",
+    "id": "prd_demo_002",
+    "nome": "Samsung Galaxy S24 128GB",
+    "preco_custo": 650,
+    "preco_venda": 849.99,
+    "stock_lojas": {
+      "loj_guimaraes": 2
+    },
+    "stock_minimo": 1,
     "tem_garantia": true,
-    "duracao_garantia": 90,
-    "ativo": true,
-    "criado_em": "2026-01-01 10:00:00"
+    "tipo": "produto"
   },
   {
-    "id": "prd_exemplo_4",
-    "nome": "Carregador USB-C 65W",
-    "descricao": "Carregador rápido USB-C 65W GaN",
-    "preco": 29.99,
-    "stock": 1,
-    "stock_minimo": 3,
-    "ean": "4895184898154",
-    "tipo": "produto",
-    "tem_garantia": false,
-    "duracao_garantia": 0,
     "ativo": true,
-    "criado_em": "2026-01-01 10:00:00"
+    "criado_em": "2026-01-01 10:00:00",
+    "descricao": "Servico substituicao ecra iPhone (todos os modelos)",
+    "duracao_garantia": 90,
+    "ean": "",
+    "fornecedor_id": "",
+    "id": "prd_demo_003",
+    "nome": "Substituicao Ecra iPhone",
+    "preco_custo": 40,
+    "preco_venda": 120,
+    "stock_lojas": {},
+    "stock_minimo": 0,
+    "tem_garantia": true,
+    "tipo": "servico"
+  },
+  {
+    "ativo": true,
+    "criado_em": "2026-01-01 10:00:00",
+    "descricao": "Carregador rapido USB-C 65W GaN universal",
+    "duracao_garantia": 0,
+    "ean": "4895184898154",
+    "fornecedor_id": "",
+    "id": "prd_demo_004",
+    "nome": "Carregador USB-C 65W GaN",
+    "preco_custo": 12,
+    "preco_venda": 34.99,
+    "stock_lojas": {
+      "loj_guimaraes": 1
+    },
+    "stock_minimo": 5,
+    "tem_garantia": false,
+    "tipo": "produto"
   }
 ]

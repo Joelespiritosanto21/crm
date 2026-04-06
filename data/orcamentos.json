@@ -1,0 +1,26 @@
+[
+  {
+    "cliente_id": "cli_1775507630_2",
+    "criado_por": "adm",
+    "data": "2026-04-06 20:33:50",
+    "estado": "faturado",
+    "fatura_id": "FAT-000002",
+    "id": "orc_1775507630_9",
+    "itens": [
+      {
+        "duracao_garantia": 730,
+        "nome": "Samsung Galaxy S24",
+        "preco_unitario": 849.99,
+        "produto_id": "prd_demo_002",
+        "quantidade": 1,
+        "subtotal": 849.99,
+        "tem_garantia": true,
+        "tipo": "produto"
+      }
+    ],
+    "loja_id": "loj_guimaraes",
+    "numero": "ORC-000001",
+    "observacoes": "Cliente pediu desconto",
+    "total": 849.99
+  }
+]

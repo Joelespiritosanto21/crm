@@ -14,9 +14,6 @@
 #include <algorithm>
 #include <functional>
 #include <ctime>
-#include <random>
-#include <array>
-#include <iomanip>
 
 /* ============================================================
  * JsonValue - representa qualquer valor JSON
@@ -208,6 +205,37 @@ inline std::string jsonEscapeString(const std::string& s) {
     r+="\""; return r;
 }
 
+/* Serialização compacta (sem newlines) — para protocolo de rede */
+inline std::string jsonCompact(const JsonValue& v) {
+    switch(v.type) {
+        case JsonValue::Type::Null:   return "null";
+        case JsonValue::Type::Bool:   return v.b ? "true" : "false";
+        case JsonValue::Type::Int:    return std::to_string(v.i);
+        case JsonValue::Type::Double: { std::ostringstream o; o<<v.d; return o.str(); }
+        case JsonValue::Type::String: return jsonEscapeString(v.s);
+        case JsonValue::Type::Array: {
+            if (v.arr.empty()) return "[]";
+            std::string r="[";
+            for (size_t i=0; i<v.arr.size(); ++i) {
+                r += jsonCompact(v.arr[i]);
+                if (i+1<v.arr.size()) r+=",";
+            }
+            return r+"]";
+        }
+        case JsonValue::Type::Object: {
+            if (v.obj.empty()) return "{}";
+            std::string r="{";
+            size_t cnt=0;
+            for (auto it=v.obj.begin(); it!=v.obj.end(); ++it) {
+                r += jsonEscapeString(it->first) + ":" + jsonCompact(it->second);
+                if (++cnt < v.obj.size()) r+=",";
+            }
+            return r+"}";
+        }
+    }
+    return "null";
+}
+
 inline std::string jsonSerialize(const JsonValue& v, int indent=0) {
     std::string pad(indent*2, ' ');
     std::string pad2((indent+1)*2, ' ');
@@ -269,25 +297,9 @@ inline bool jsonSaveFile(const std::string& path, const JsonValue& v) {
     return true;
 }
 
-/* UUIDv4 generator and ID wrapper */
-inline std::string uuidv4() {
-    std::array<uint8_t,16> b;
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    static std::uniform_int_distribution<int> dist(0,255);
-    for (int i=0;i<16;++i) b[i] = (uint8_t)dist(gen);
-    b[6] = (b[6] & 0x0F) | 0x40; // version 4
-    b[8] = (b[8] & 0x3F) | 0x80; // variant
-    std::ostringstream oss;
-    oss << std::hex << std::setfill('0');
-    for (int i=0;i<16;++i) {
-        oss << std::setw(2) << (int)b[i];
-        if (i==3 || i==5 || i==7 || i==9) oss << "-";
-    }
-    return oss.str();
-}
-
-/* Gera ID com prefixo usando UUIDv4 */
+/* Gera ID único baseado em timestamp + contagem */
 inline std::string generateId(const std::string& prefix) {
-    return prefix + uuidv4();
+    static long long counter = 0;
+    auto t = ::time(nullptr);
+    return prefix + std::to_string(t) + "_" + std::to_string(++counter);
 }

@@ -8,9 +8,6 @@
 #include "garantias.h"
 #include "documentos.h"
 #include "logs.h"
-#include "data_layer.h"
-#include "sync_manager.h"
-#include "caixa.h"
 #include <iostream>
 #include <iomanip>
 #include <vector>
@@ -19,7 +16,7 @@
  * Próximo número de fatura
  * ================================================================ */
 int vendasProximoNumero() {
-    JsonValue vendas = dl_get_vendas_local();
+    JsonValue vendas = jsonParseFile(FILE_VENDAS);
     if (!vendas.isArray() || vendas.arr.empty()) return 1;
     int max = 0;
     for (auto& v : vendas.arr) {
@@ -71,7 +68,7 @@ void vendasCriar() {
             std::string nomeLow = nome;
             std::transform(nomeLow.begin(), nomeLow.end(), nomeLow.begin(), ::tolower);
 
-            JsonValue prods = dl_get_produtos_local();
+            JsonValue prods = jsonParseFile(FILE_PRODUTOS);
             std::vector<JsonValue*> encontrados;
             if (prods.isArray()) {
                 for (auto& p : prods.arr) {
@@ -171,42 +168,11 @@ void vendasCriar() {
     venda["total"]      = JsonValue(total);
     venda["data"]       = JsonValue(dataAtual());
     venda["vendedor"]   = JsonValue(g_sessao.username);
-    // Método de pagamento
-    std::cout << "\n  Método de pagamento:\n";
-    std::cout << "   1) Dinheiro\n   2) Multibanco (MB)\n   3) Cartão\n   4) Crédito\n";
-    int pm = lerInteiro("  Opção: ", 1, 4);
-    std::string metodo;
-    if (pm==1) metodo = "dinheiro";
-    else if (pm==2) metodo = "mb";
-    else if (pm==3) metodo = "cartao";
-    else metodo = "credito";
-    venda["pagamento_metodo"] = JsonValue(metodo);
-    venda["pagamento_total"] = JsonValue(total);
 
-    // Persistir venda localmente
-    dl_add_venda_local(JsonValue(venda));
-    // Enfileirar para sincronização com servidor
-    sync_add_operation("create_venda", JsonValue(venda));
-    // Registar pagamento na caixa, se existir
-    if (!caixaRegistarPagamento(metodo, total)) {
-        std::cout << "  [!] Aviso: não existe caixa aberta. Pagamento não registado na caixa.\n";
-    }
-    // Fidelização: atribuir pontos ao cliente (1 ponto por euro)
-    try {
-        JsonValue clientes = dl_get_clientes_local();
-        if (clientes.isArray()) {
-            for (auto &c : clientes.arr) {
-                if (c["id"].asString() == cliente_id) {
-                    int pontos = 0;
-                    if (c.has("pontos")) pontos = (int)c["pontos"].asInt();
-                    pontos += (int)total;
-                    c["pontos"] = JsonValue((long long)pontos);
-                    dl_save_clientes_local(clientes);
-                    break;
-                }
-            }
-        }
-    } catch(...) {}
+    JsonValue vendas = jsonParseFile(FILE_VENDAS);
+    if (!vendas.isArray()) vendas = JsonValue(JsonArray{});
+    vendas.arr.push_back(JsonValue(venda));
+    jsonSaveFile(FILE_VENDAS, vendas);
 
     /* 5. AUTOMAÇÕES PÓS-VENDA */
     std::vector<std::string> garantias_criadas;
@@ -253,7 +219,7 @@ void vendasCriar() {
  * Listar vendas
  * ================================================================ */
 void vendasListar() {
-    JsonValue vendas = dl_get_vendas_local();
+    JsonValue vendas = jsonParseFile(FILE_VENDAS);
     subtitulo("LISTA DE VENDAS");
 
     if (!vendas.isArray() || vendas.arr.empty()) {
@@ -291,7 +257,7 @@ void vendasDetalhe() {
     subtitulo("DETALHE DE VENDA");
     std::string num = lerString("  Número da fatura (ex: FAT-000001): ");
 
-    JsonValue vendas = dl_get_vendas_local();
+    JsonValue vendas = jsonParseFile(FILE_VENDAS);
     if (!vendas.isArray()) return;
 
     for (auto& v : vendas.arr) {

@@ -52,18 +52,11 @@ extern Sessao       g_sessao;
 extern std::string  g_breadcrumb;
 extern std::string  g_dica;
 extern std::string  g_loja_nome;
-/* Configuracao de sincronizacao */
-extern std::string  g_servidor_host;
-extern int          g_servidor_port;
-extern std::string  g_api_token;
 
 /* ── Inicializar consola Windows ───────────────────────────── */
 #ifdef _WIN32
   #include <windows.h>
   #include <conio.h>
-    #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
-        #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
-    #endif
   inline void uiInitConsole() {
       SetConsoleOutputCP(65001);
       SetConsoleCP(65001);

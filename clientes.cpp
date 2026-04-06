@@ -6,9 +6,6 @@
 #include "logs.h"
 #include "auth.h"
 #include "json_utils.h"
-#include "data_layer.h"
-#include "sync_manager.h"
-#include "data_layer.h"
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
@@ -17,7 +14,7 @@
  * Obter nome do cliente por ID
  * ================================================================ */
 std::string clienteObterNome(const std::string& id) {
-    JsonValue clientes = dl_get_clientes_local();
+    JsonValue clientes = jsonParseFile(FILE_CLIENTES);
     if (clientes.isArray()) {
         for (auto& c : clientes.arr)
             if (c["id"].asString()==id) return c["nome"].asString();
@@ -29,7 +26,7 @@ std::string clienteObterNome(const std::string& id) {
  * Encontrar cliente por campo (nif, telefone, email)
  * ================================================================ */
 JsonValue clienteEncontrar(const std::string& campo, const std::string& valor) {
-    JsonValue clientes = dl_get_clientes_local();
+    JsonValue clientes = jsonParseFile(FILE_CLIENTES);
     if (!clientes.isArray()) return JsonValue();
     for (auto& c : clientes.arr) {
         if (c[campo].asString() == valor) return c;
@@ -41,7 +38,7 @@ JsonValue clienteEncontrar(const std::string& campo, const std::string& valor) {
  * Criar cliente (interativo)
  * ================================================================ */
 static JsonValue clienteCriarInterativo(const std::string& nif_predef="") {
-    JsonValue clientes = dl_get_clientes_local();
+    JsonValue clientes = jsonParseFile(FILE_CLIENTES);
     if (!clientes.isArray()) clientes = JsonValue(JsonArray{});
 
     std::string nome = lerString("  Nome: ");
@@ -81,9 +78,7 @@ static JsonValue clienteCriarInterativo(const std::string& nif_predef="") {
     novo["data_registo"] = JsonValue(dataAtual());
 
     clientes.arr.push_back(JsonValue(novo));
-    dl_save_clientes_local(clientes);
-    // Enfileirar operacao para sincronizacao
-    sync_add_operation("create_cliente", JsonValue(novo));
+    jsonSaveFile(FILE_CLIENTES, clientes);
     logRegistar("criar_cliente", "nome=" + nome + " nif=" + nif);
     std::cout << "  [OK] Cliente '" << nome << "' registado.\n";
     return JsonValue(novo);
@@ -101,7 +96,7 @@ void clientesCriar() {
  * Listar clientes
  * ================================================================ */
 void clientesListar() {
-    JsonValue clientes = dl_get_clientes_local();
+    JsonValue clientes = jsonParseFile(FILE_CLIENTES);
     subtitulo("LISTA DE CLIENTES");
 
     if (!clientes.isArray() || clientes.arr.empty()) {
@@ -164,7 +159,7 @@ void clientesEditar() {
             if (op==3) c["email"]    = JsonValue(novo_val);
             if (op==4) c["nif"]      = JsonValue(novo_val);
 
-            dl_save_clientes_local(clientes);
+            jsonSaveFile(FILE_CLIENTES, clientes);
             logRegistar("editar_cliente", "id=" + c["id"].asString());
             std::cout << "  [OK] Cliente atualizado.\n";
             return;
@@ -182,7 +177,7 @@ void clientesSuspender() {
     if (!authReautenticar()) return; // Ação crítica
 
     std::string busca = lerString("  NIF do cliente: ");
-    JsonValue clientes = dl_get_clientes_local();
+    JsonValue clientes = jsonParseFile(FILE_CLIENTES);
     if (!clientes.isArray()) return;
 
     for (auto& c : clientes.arr) {
@@ -190,7 +185,7 @@ void clientesSuspender() {
             std::cout << "  Cliente: " << c["nome"].asString() << "\n";
             if (!lerSimNao("  Confirmar suspensão?")) return;
             c["estado"] = JsonValue(std::string("suspenso"));
-            dl_save_clientes_local(clientes);
+            jsonSaveFile(FILE_CLIENTES, clientes);
             logRegistar("suspender_cliente", "nif=" + busca);
             std::cout << "  [OK] Cliente suspenso.\n";
             return;
@@ -207,7 +202,7 @@ void clientesHistorico() {
     std::string busca = lerString("  NIF / Telefone / Email: ");
     if (busca.empty()) return;
 
-    JsonValue clientes = dl_get_clientes_local();
+    JsonValue clientes = jsonParseFile(FILE_CLIENTES);
     if (!clientes.isArray()) return;
 
     std::string cliente_id;
@@ -284,7 +279,7 @@ void clientesPesquisar() {
     std::string buscaLow = busca;
     std::transform(buscaLow.begin(), buscaLow.end(), buscaLow.begin(), ::tolower);
 
-    JsonValue clientes = dl_get_clientes_local();
+    JsonValue clientes = jsonParseFile(FILE_CLIENTES);
     if (!clientes.isArray()) return;
 
     bool encontrou = false;

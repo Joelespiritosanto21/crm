@@ -1,0 +1,13 @@
+# TechFix — Configuração do cliente de loja
+# Copiar para: servidor.conf
+# (este ficheiro fica na mesma pasta que o gestao_loja)
+
+# IP ou hostname do servidor central
+host=45.131.64.57
+
+# Porta do servidor de lojas (padrão: 2022)
+port=2022
+
+# ID desta loja (obtido após criar a loja no painel admin)
+# Exemplo: loj_1234567890_1
+loja_id=
