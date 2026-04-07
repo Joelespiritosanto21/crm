@@ -1,13 +1,13 @@
 # =============================================================
-# TechFix — Makefile completo
-# =============================================================
+# TechFix — Makefile (Linux/macOS)
 #
 #  make                → compila tudo
 #  make gestao_server  → servidor central
-#  make gestao_loja    → cliente das lojas
-#  make gestao         → terminal standalone (sem rede)
+#  make gestao_loja    → cliente das lojas (Linux)
 #  make runserver      → inicia o servidor
 #  make clean          → limpa binários
+#
+# Windows: usar compilar_windows.bat
 # =============================================================
 
 CXX      = g++
@@ -15,15 +15,11 @@ CXXFLAGS = -std=c++11 -O2 -Wall \
            -Wno-unused-result -Wno-unused-variable \
            -Wno-unused-function -Wno-unused-parameter
 
-SRCS_STANDALONE = main.cpp auth.cpp clientes.cpp produtos.cpp \
-                  vendas.cpp orcamentos.cpp reparacoes.cpp \
-                  garantias.cpp lojas.cpp logs.cpp documentos.cpp
-
-all: dirs gestao_server gestao_loja gestao
+all: dirs gestao_server gestao_loja
 	@echo ""
-	@echo "  ✓ Compilação completa."
+	@echo "  Compilacao completa."
 	@echo "  Servidor : ./gestao_server"
-	@echo "  Lojas    : ./gestao_loja"
+	@echo "  Cliente  : ./gestao_loja"
 	@echo ""
 
 dirs:
@@ -37,15 +33,11 @@ gestao_loja: gestao_loja.cpp client.h net_utils.h protocolo.h common.h json_util
 	$(CXX) $(CXXFLAGS) -o gestao_loja gestao_loja.cpp -lpthread
 	@echo "  [OK] gestao_loja"
 
-gestao: $(SRCS_STANDALONE)
-	$(CXX) $(CXXFLAGS) -o gestao $(SRCS_STANDALONE)
-	@echo "  [OK] gestao (standalone)"
-
 runserver: gestao_server
 	./gestao_server
 
 clean:
-	rm -f gestao_server gestao_loja gestao *.o
-	@echo "  Limpeza concluída."
+	rm -f gestao_server gestao_loja *.o
+	@echo "  Limpeza concluida."
 
 .PHONY: all dirs runserver clean

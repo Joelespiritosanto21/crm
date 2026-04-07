@@ -20,6 +20,10 @@
 
 #ifdef _WIN32
   #include <direct.h>
+  #include <windows.h>
+  /* No Windows, Sleep() é em ms; sleep() em POSIX é em segundos */
+  #undef sleep
+  #define sleep(s) Sleep((DWORD)((s)*1000))
 #else
   #include <unistd.h>
   #include <sys/stat.h>
@@ -1388,12 +1392,23 @@ static bool ecrLogin() {
     if (user.size()!=3) { ecraErr("Username invalido"); return false; }
 
     /* Password sem eco */
+    std::string pw;
+#ifdef _WIN32
+    std::cout<<"  Password: ";
+    std::cout.flush();
+    int c;
+    while((c=_getch())!='\r'&&c!='\n'&&c!=EOF){
+        if(c=='\b'||c==127){if(!pw.empty()){pw.pop_back();std::cout<<"\b \b";}}
+        else if(c>=32){pw+=(char)c;std::cout<<'*';}
+    }
+    std::cout<<"\n";
+#else
     std::cout<<"  Password: ";
     std::cout<<"\033[8m";
-    std::string pw;
     std::getline(std::cin, pw);
     std::cout<<"\033[28m\n";
     while(!pw.empty()&&pw.back()=='\r') pw.pop_back();
+#endif
 
     return clientLogin(user, pw);
 }

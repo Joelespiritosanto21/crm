@@ -8,26 +8,30 @@
 #include <iostream>
 #include <iomanip>
 
-/* Leitura de password cross-platform (sem eco) */
+/* Leitura de password sem eco — cross-platform */
 static std::string lerPassword(const std::string& prompt) {
     std::cout << "  " << prompt;
     std::cout.flush();
     std::string pw;
 #ifdef _WIN32
-    #include <conio.h>
-    char c;
-    while ((c = _getch()) != '\r' && c != '\n') {
-        if (c == '\b') { if (!pw.empty()) { pw.pop_back(); std::cout << "\b \b"; } }
-        else           { pw += c; std::cout << '*'; }
+    /* Windows: usar _getch() do conio.h */
+    int c;
+    while ((c = _getch()) != '\r' && c != '\n' && c != EOF) {
+        if (c == '\b' || c == 127) {
+            if (!pw.empty()) { pw.pop_back(); std::cout << "\b \b"; }
+        } else if (c >= 32) {
+            pw += (char)c;
+            std::cout << '*';
+        }
     }
     std::cout << "\n";
 #else
-    /* Linux/macOS: desativar eco via escape ANSI (sem termios) */
-    std::cout << "\033[8m";   /* esconder texto */
+    /* Linux/macOS: ANSI hide */
+    std::cout << "\033[8m";
     std::getline(std::cin, pw);
-    std::cout << "\033[28m";  /* mostrar texto */
-    std::cout << "\n";
+    std::cout << "\033[28m\n";
 #endif
+    while (!pw.empty() && pw.back() == '\r') pw.pop_back();
     return pw;
 }
 

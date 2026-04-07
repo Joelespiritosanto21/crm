@@ -60,11 +60,13 @@ extern std::string  g_loja_nome;
   inline void uiInitConsole() {
       SetConsoleOutputCP(65001);
       SetConsoleCP(65001);
-      /* Modo ANSI no Windows 10+ */
+      /* Activar ANSI no Windows 10+ (ENABLE_VIRTUAL_TERMINAL_PROCESSING = 4) */
       HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
-      DWORD mode = 0;
-      GetConsoleMode(h, &mode);
-      SetConsoleMode(h, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+      if(h != INVALID_HANDLE_VALUE) {
+          DWORD mode = 0;
+          if(GetConsoleMode(h, &mode))
+              SetConsoleMode(h, mode | 0x0004);
+      }
   }
 #else
   inline void uiInitConsole() {}
@@ -317,18 +319,14 @@ inline void boxL(const std::string& s)      { std::cout << s << "\n"; }
  * INPUT — ler tecla unica (para menus) ou linha completa
  * ================================================================ */
 
-/* Ler um unico caracter sem Enter (getch) */
+/* Ler um unico caracter sem Enter */
 inline char lerTecla() {
-#ifdef _WIN32
-    return (char)_getch();
-#else
-    /* Simples: ler linha e pegar primeiro char */
     std::cout.flush();
     std::string s;
     std::getline(std::cin, s);
+    while(!s.empty() && s.back()=='\r') s.pop_back();
     if(s.empty()) return '\n';
-    return s[0];
-#endif
+    return (char)std::toupper((unsigned char)s[0]);
 }
 
 inline std::string lerString(const std::string& prompt) {

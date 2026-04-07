@@ -1,0 +1,34 @@
+# =============================================================
+# TechFix — Makefile para Windows (MinGW / MSYS2)
+#
+# Instalar MinGW: https://www.msys2.org/
+#   pacman -S mingw-w64-x86_64-gcc
+#
+# Compilar (no MSYS2 / MinGW shell):
+#   make -f Makefile.windows
+#
+# Gera: gestao_loja.exe
+# =============================================================
+
+CXX      = g++
+CXXFLAGS = -std=c++11 -O2 -DWIN32 \
+           -Wno-unused-result -Wno-unused-variable \
+           -Wno-unused-function -Wno-unused-parameter
+LIBS     = -lws2_32
+
+all: dirs gestao_loja.exe
+
+dirs:
+	@if not exist data mkdir data
+	@if not exist docs mkdir docs
+
+gestao_loja.exe: gestao_loja.cpp client.h net_utils.h protocolo.h common.h json_utils.h sha256.h
+	$(CXX) $(CXXFLAGS) -o gestao_loja.exe gestao_loja.cpp $(LIBS)
+	@echo.
+	@echo   [OK] gestao_loja.exe compilado com sucesso!
+	@echo.
+
+clean:
+	del /Q gestao_loja.exe 2>nul || true
+
+.PHONY: all dirs clean

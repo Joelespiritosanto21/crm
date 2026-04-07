@@ -8,7 +8,9 @@
   #include <winsock2.h>
   #include <ws2tcpip.h>
   #pragma comment(lib,"ws2_32.lib")
-  typedef int socklen_t;
+  #ifndef _WIN32
+typedef int socklen_t;
+#endif
   #define NET_CLOSE(s) closesocket(s)
   #define NET_ERRNO    WSAGetLastError()
   typedef SOCKET net_sock_t;
@@ -60,15 +62,18 @@ inline bool netSendLine(net_sock_t sock, const JsonValue& v) {
 /* ── Ler linha JSON (bloqueante) ──────────────────────────── */
 inline bool netReadLine(net_sock_t sock, std::string& out, int timeout_ms = 10000) {
     out.clear();
-#ifndef _WIN32
-    /* timeout via setsockopt */
+    /* timeout via setsockopt (cross-platform) */
     if (timeout_ms > 0) {
+#ifdef _WIN32
+        DWORD tv_ms = (DWORD)timeout_ms;
+        setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv_ms, sizeof(tv_ms));
+#else
         struct timeval tv;
         tv.tv_sec  = timeout_ms / 1000;
         tv.tv_usec = (timeout_ms % 1000) * 1000;
-        setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-    }
+        setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
 #endif
+    }
     char buf[1];
     while (true) {
         int n = recv(sock, buf, 1, 0);
@@ -135,10 +140,14 @@ inline net_sock_t netConnect(const std::string& host, int port) {
     }
 
     /* Timeout de ligacao: 5 segundos */
-#ifndef _WIN32
+#ifdef _WIN32
+    DWORD tv_ms = 5000;
+    setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv_ms, sizeof(tv_ms));
+    setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv_ms, sizeof(tv_ms));
+#else
     struct timeval tv; tv.tv_sec=5; tv.tv_usec=0;
-    setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-    setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+    setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+    setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof(tv));
 #endif
 
     if (connect(s, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
