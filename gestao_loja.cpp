@@ -9,6 +9,13 @@
  *   (ou via: make gestao_loja)
  */
 
+/*
+ * gestao_loja.cpp - Cliente TechFix para PCs das lojas
+ * Compila em: Linux, macOS, Windows (MinGW)
+ *
+ * Linux/macOS:  g++ -std=c++11 -O2 -o gestao_loja gestao_loja.cpp -lpthread
+ * Windows:      g++ -std=c++11 -O2 -o gestao_loja.exe gestao_loja.cpp -lws2_32
+ */
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -17,17 +24,8 @@
 #include <cstring>
 #include <algorithm>
 #include <vector>
-
-#ifdef _WIN32
-  #include <direct.h>
-  #include <windows.h>
-  /* No Windows, Sleep() é em ms; sleep() em POSIX é em segundos */
-  #undef sleep
-  #define sleep(s) Sleep((DWORD)((s)*1000))
-#else
-  #include <unistd.h>
-  #include <sys/stat.h>
-#endif
+#include <map>
+#include <set>
 
 #include "common.h"
 #include "json_utils.h"
@@ -1277,7 +1275,7 @@ static void menuPrincipal() {
         menuItem("9","Sair"); std::cout<<"   "; menuItem("F","Sair"); std::cout<<"\n";
         std::cout<<"\n";
         hline();
-        std::cout<<ANSI_DIM<<"                                        SUB-TOTAL ---------------->"<<ANSI_RESET<<"\n";
+        std::cout<<A_DIM<<"                                        SUB-TOTAL ---------------->"<<A_RST<<"\n";
 
         char op = lerOpcaoMenu("Opcao: ");
         switch(op) {
@@ -1358,10 +1356,10 @@ static void menuPrincipal() {
  * ================================================================ */
 static bool configurarServidor() {
     cls();
-    std::cout<<ANSI_BOLD<<ANSI_WHITE;
+    std::cout<<A_BOLD<<A_W;
     std::cout<<"  TECHFIX - CONFIGURACAO INICIAL\n";
     std::cout<<"  ================================\n\n";
-    std::cout<<ANSI_RESET;
+    std::cout<<A_RST;
     std::cout<<"  Ficheiro '"<<CLIENT_CONFIG_FILE<<"' nao encontrado.\n\n";
 
     ClientConfig cfg;
@@ -1392,23 +1390,7 @@ static bool ecrLogin() {
     if (user.size()!=3) { ecraErr("Username invalido"); return false; }
 
     /* Password sem eco */
-    std::string pw;
-#ifdef _WIN32
-    std::cout<<"  Password: ";
-    std::cout.flush();
-    int c;
-    while((c=_getch())!='\r'&&c!='\n'&&c!=EOF){
-        if(c=='\b'||c==127){if(!pw.empty()){pw.pop_back();std::cout<<"\b \b";}}
-        else if(c>=32){pw+=(char)c;std::cout<<'*';}
-    }
-    std::cout<<"\n";
-#else
-    std::cout<<"  Password: ";
-    std::cout<<"\033[8m";
-    std::getline(std::cin, pw);
-    std::cout<<"\033[28m\n";
-    while(!pw.empty()&&pw.back()=='\r') pw.pop_back();
-#endif
+    std::string pw = lerPassword("Password: ");
 
     return clientLogin(user, pw);
 }
@@ -1450,7 +1432,7 @@ int main(int argc, char* argv[]) {
     std::cout.flush();
 
     if (!clientLigar(g_client.cfg.host, g_client.cfg.port)) {
-        std::cout<<"\n  "<<ANSI_RED<<"[!!] Nao foi possivel ligar ao servidor!"<<ANSI_RESET<<"\n\n";
+        std::cout<<"\n  "<<A_R<<"[!!] Nao foi possivel ligar ao servidor!"<<A_RST<<"\n\n";
         std::cout<<"  Verifique:\n";
         std::cout<<"  1. O servidor gestao_server esta a correr?\n";
         std::cout<<"  2. O IP '"<<g_client.cfg.host<<"' esta correto?\n";
@@ -1460,7 +1442,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     std::cout<<"  Ligado ao servidor.\n";
-    sleep(1);
+    PLATFORM_SLEEP(1);
 
     /* Loop de login */
     for(int i=0;i<3;++i) {

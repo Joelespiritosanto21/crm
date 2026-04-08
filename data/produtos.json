@@ -11,7 +11,7 @@
     "preco_custo": 950,
     "preco_venda": 1199.99,
     "stock_lojas": {
-      "loj_guimaraes": 5
+      "loj_guimaraes": 4
     },
     "stock_minimo": 2,
     "tem_garantia": true,
@@ -29,7 +29,7 @@
     "preco_custo": 650,
     "preco_venda": 849.99,
     "stock_lojas": {
-      "loj_guimaraes": 2
+      "loj_guimaraes": 0
     },
     "stock_minimo": 1,
     "tem_garantia": true,
