@@ -1,0 +1,17 @@
+
+  +==========================================+
+  |   TECHFIX — Servidor Central             |
+  +==========================================+
+  |                                          |
+  Terminal web       : http://0.0.0.0:2021
+  Servidor de lojas  : 0.0.0.0:2022
+  |  IP local : 21.0.1.8                    |
+  |  Lojas    : TCP port 2022               |
+  |  Web      : http://21.0.1.8:2021/        |
+  |                                          |
+  |  Ctrl+C   : Parar servidor               |
+  |                                          |
+  +==========================================+
+
+  Aguardando ligacoes...
+

@@ -53,15 +53,15 @@ inline void netCleanup() {
 
 /* ── Definir timeout num socket ─────────────────────────────── */
 inline void netSetTimeout(net_sock_t s, int ms) {
-    if (ms <= 0) return;
+    /* ms=0 desactiva o timeout (bloqueante infinito) */
 #ifdef _WIN32
-    DWORD t = (DWORD)ms;
+    DWORD t = (ms > 0) ? (DWORD)ms : 0;
     setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (const char*)&t, sizeof(t));
     setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (const char*)&t, sizeof(t));
 #else
     struct timeval tv;
-    tv.tv_sec  = ms / 1000;
-    tv.tv_usec = (ms % 1000) * 1000;
+    tv.tv_sec  = (ms > 0) ? ms / 1000 : 0;
+    tv.tv_usec = (ms > 0) ? (ms % 1000) * 1000 : 0;
     setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
     setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof(tv));
 #endif

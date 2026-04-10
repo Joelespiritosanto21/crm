@@ -33,6 +33,9 @@
 #include "net_utils.h"
 #include "protocolo.h"
 #include "client.h"
+#ifndef _WIN32
+#include <unistd.h>  /* readlink */
+#endif
 
 /* Globais (extern em common.h) */
 Sessao      g_sessao;
@@ -40,6 +43,47 @@ std::string g_breadcrumb = "Menu Principal";
 std::string g_dica       = "";
 std::string g_loja_nome  = "TECHFIX";
 ClientState g_client;
+
+/* ── Directorio do executavel (para encontrar servidor.conf) ── */
+static std::string g_exe_dir = ".";  /* inicializado em main() */
+
+/* Caminho absoluto para um ficheiro relativo ao executavel */
+static std::string exePath(const std::string& fname) {
+    if (g_exe_dir == ".") return fname;
+    return g_exe_dir + "/" + fname;
+}
+
+/* Obter directorio do executavel cross-platform */
+static std::string getExeDir(const std::string& argv0) {
+#ifdef _WIN32
+    char buf[4096] = {0};
+    DWORD n = GetModuleFileNameA(NULL, buf, sizeof(buf));
+    if (n > 0) {
+        std::string p(buf, n);
+        size_t pos = p.find_last_of("\\/");
+        if (pos != std::string::npos) return p.substr(0, pos);
+    }
+#else
+    /* Linux: /proc/self/exe */
+    char buf[4096] = {0};
+    ssize_t n = readlink("/proc/self/exe", buf, sizeof(buf)-1);
+    if (n > 0) {
+        std::string p(buf, n);
+        size_t pos = p.find_last_of('/');
+        if (pos != std::string::npos) return p.substr(0, pos);
+    }
+    /* macOS: _NSGetExecutablePath nao disponivel aqui, usar argv[0] */
+#endif
+    /* Fallback: usar argv[0] */
+    std::string p = argv0;
+#ifdef _WIN32
+    size_t pos = p.find_last_of("\\/");
+#else
+    size_t pos = p.find_last_of('/');
+#endif
+    if (pos != std::string::npos) return p.substr(0, pos);
+    return ".";
+}
 
 /* ================================================================
  * UTILITARIOS DE APRESENTACAO
@@ -1368,8 +1412,20 @@ static bool configurarServidor() {
     cfg.port    = porta.empty() ? PROTO_PORT : std::stoi(porta);
     cfg.loja_id = lerString("  ID desta loja (ex: loj_..., ou deixar em branco): ");
 
-    guardarConfig(cfg);
-    std::cout<<"\n  Configuracao guardada em '"<<CLIENT_CONFIG_FILE<<"'.\n\n";
+    /* Guardar na pasta do executavel */
+    std::string cfg_path = exePath(CLIENT_CONFIG_FILE);
+    std::ofstream cf(cfg_path.c_str());
+    if(cf.is_open()) {
+        cf << "# TechFix - Configuracao do servidor\n";
+        cf << "host=" << cfg.host << "\n";
+        cf << "port=" << cfg.port << "\n";
+        cf << "loja_id=" << cfg.loja_id << "\n";
+        cf.close();
+        std::cout<<"\n  Configuracao guardada em '"<<cfg_path<<"'.\n\n";
+    } else {
+        guardarConfig(cfg); /* fallback: directorio actual */
+        std::cout<<"\n  Configuracao guardada em '"<<CLIENT_CONFIG_FILE<<"'.\n\n";
+    }
     return true;
 }
 
@@ -1403,6 +1459,9 @@ int main(int argc, char* argv[]) {
     uiInitConsole();
     netInit();
 
+    /* Inicializar directorio do executavel ANTES de tudo */
+    g_exe_dir = getExeDir(argc > 0 ? argv[0] : ".");
+
     /* Argumento: --servidor host:port */
     for(int i=1;i<argc;++i) {
         if(strcmp(argv[i],"--servidor")==0 && i+1<argc) {
@@ -1419,16 +1478,24 @@ int main(int argc, char* argv[]) {
         if(strcmp(argv[i],"--loja")==0 && i+1<argc) g_client.cfg.loja_id=argv[++i];
     }
 
-    /* Carregar config se existir e nao foi passado por argumento */
-    if(g_client.cfg.host=="127.0.0.1") {
-        std::ifstream tf(CLIENT_CONFIG_FILE);
-        if(!tf.is_open()) configurarServidor();
-        g_client.cfg = carregarConfig();
+    /* Carregar config — procurar na pasta do executavel primeiro */
+    if(g_client.cfg.host.empty() || g_client.cfg.host=="127.0.0.1") {
+        std::string cfg_path = exePath(CLIENT_CONFIG_FILE);
+        std::ifstream tf(cfg_path.c_str());
+        if(!tf.is_open()) {
+            /* Tambem tentar no directorio actual */
+            std::ifstream tf2(CLIENT_CONFIG_FILE);
+            if(!tf2.is_open()) {
+                configurarServidor();
+            }
+        }
+        g_client.cfg = carregarConfig(exePath(CLIENT_CONFIG_FILE));
     }
 
     /* Ligar ao servidor */
     cls();
-    std::cout<<"\n  A ligar ao servidor "<<g_client.cfg.host<<":"<<g_client.cfg.port<<"...\n";
+    std::cout<<"\n  Config: "<<exePath(CLIENT_CONFIG_FILE)<<"\n";
+    std::cout<<"  A ligar ao servidor "<<g_client.cfg.host<<":"<<g_client.cfg.port<<"...\n";
     std::cout.flush();
 
     if (!clientLigar(g_client.cfg.host, g_client.cfg.port)) {

@@ -12,7 +12,10 @@
 #include <sstream>
 
 #define CLIENT_CONFIG_FILE  "servidor.conf"
-#define CLIENT_TIMEOUT_MS   10000
+#define CLIENT_CONNECT_MS   8000    /* timeout para estabelecer ligacao */
+#define CLIENT_RESPONSE_MS  30000   /* timeout para receber resposta do servidor */
+/* O socket fica SEM timeout de leitura permanente — so aplicado ao esperar resposta */
+#define CLIENT_TIMEOUT_MS   CLIENT_RESPONSE_MS  /* compatibilidade */
 
 struct ClientConfig {
     std::string host;
@@ -31,9 +34,13 @@ struct ClientState {
 extern ClientState g_client;
 
 /* ── Carregar / guardar configuracao ──────────────────────── */
-inline ClientConfig carregarConfig() {
+inline ClientConfig carregarConfig(const std::string& path = CLIENT_CONFIG_FILE) {
     ClientConfig cfg;
-    std::ifstream f(CLIENT_CONFIG_FILE);
+    /* Tentar o path fornecido, depois o nome simples */
+    std::ifstream f(path.c_str());
+    if (!f.is_open() && path != CLIENT_CONFIG_FILE) {
+        f.open(CLIENT_CONFIG_FILE);
+    }
     if (!f.is_open()) return cfg;
     std::string line;
     while (std::getline(f, line)) {
@@ -68,7 +75,8 @@ inline bool clientLigar(const std::string& host, int port) {
     }
     g_client.sock = netConnect(host, port);
     if (g_client.sock == NET_INVALID) return false;
-    netSetTimeout(g_client.sock, CLIENT_TIMEOUT_MS);
+    /* Sem timeout permanente no socket — o timeout e aplicado
+       apenas durante a espera de resposta em clientCmd() */
     g_client.ligado = true;
     return true;
 }
@@ -83,10 +91,13 @@ inline JsonValue clientCmd(const std::string& cmd, const JsonObject& data = Json
         return mkErr("Ligacao perdida. Reinicie o programa.");
     }
     std::string line;
-    if (!netReadLine(g_client.sock, line, CLIENT_TIMEOUT_MS)) {
+    /* Timeout so durante a espera de resposta (nao afecta input do utilizador) */
+    if (!netReadLine(g_client.sock, line, CLIENT_RESPONSE_MS)) {
         g_client.ligado = false;
         return mkErr("Timeout ou servidor sem resposta.");
     }
+    /* Repor socket sem timeout para nao interferir com getline() */
+    netSetTimeout(g_client.sock, 0);
     return netParseLine(line);
 }
 
